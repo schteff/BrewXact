@@ -7,33 +7,41 @@
       google.charts.load("current", { packages: ["corechart"] });
       google.charts.setOnLoadCallback(drawChart);
 
-      const temperatureData = [];
-
       function drawChart() {
-        const chart = new google.visualization.LineChart(document.getElementById("curve_chart"));
+        fetchTemps(firstTemps => {
+          const chart = new google.visualization.LineChart(document.getElementById("curve_chart"));
 
-        const options = {
-          title: "Temperaturen",
-          curveType: "function",
-          legend: { position: "bottom" }
-        };
+          const options = {
+            title: "Temperaturen",
+            curveType: "function",
+            legend: { position: "bottom" }
+          };
 
-        const dataTable = new google.visualization.DataTable();
-        dataTable.addColumn("datetime", "Tid");
-        dataTable.addColumn("number", "Temp");
+          const dataTable = new google.visualization.DataTable();
+          dataTable.addColumn("datetime", "Tid");
+          firstTemps.forEach(sensor => {
+            dataTable.addColumn("number", sensor.id);
+          });
 
-        setInterval(function() {
-          fetch("/temps")
-            .then(response => response.json())
-            .then(jsonTemp => {
+          setInterval(function() {
+            fetchTemps(jsonTemp => {
               const timestamp = new Date();
-              temperatureData.push({ timestamp: new Date(), values: jsonTemp });
 
-              dataTable.addRow([timestamp, jsonTemp[0].t]);
+              const rowArray = [timestamp];
+              jsonTemp.forEach(tempObj => rowArray.push(tempObj.t));
+
+              dataTable.addRow(rowArray);
 
               chart.draw(dataTable, options);
             });
-        }, 3000);
+          }, 3000);
+        });
+      }
+
+      function fetchTemps(callback) {
+        fetch("/temps")
+          .then(response => response.json())
+          .then(jsonTemp => callback(jsonTemp));
       }
     </script>
   </head>
