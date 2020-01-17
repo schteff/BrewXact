@@ -16,7 +16,7 @@
           legend: { position: "bottom" }
         };
 
-        var gauge = new google.visualization.Gauge(document.getElementById("chart_div"));
+        var gaugeChart = new google.visualization.Gauge(document.getElementById("gauge_chart"));
 
         var gaugeOptions = {
           width: 400,
@@ -69,7 +69,7 @@
               }
 
               lineChart.draw(chartDataTable, options);
-              gauge.draw(gaugeDataTable, gaugeOptions);
+              gaugeChart.draw(gaugeDataTable, gaugeOptions);
             });
           }, 3000);
         });
