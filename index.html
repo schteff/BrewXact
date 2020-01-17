@@ -25,10 +25,11 @@
             dataTable.addColumn("number", sensor.id);
 
             var label = document.createElement("SPAN");
-            label.append(sensor.id);
+            label.append(sensor.id + ": ");
             wrapper.append(label);
 
             var x = document.createElement("INPUT");
+            x.setAttribute("id", sensor.id + "_name");
             x.setAttribute("type", "text");
             x.setAttribute("value", sensor.id);
             wrapper.append(x);
@@ -44,6 +45,10 @@
               jsonTemp.forEach(tempObj => rowArray.push(tempObj.t));
 
               dataTable.addRow(rowArray);
+
+              for (var i = 0; i < jsonTemp.size; i++) {
+                dataTable.setColumnLabel(i + 1, document.getElementById(jsonTemp[i] + "_name")).value;
+              }
 
               chart.draw(dataTable, options);
             });
