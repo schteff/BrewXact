@@ -14,7 +14,7 @@
           fetch("/temps")
             .then(response => response.json())
             .then(myJson => {
-              temperatureData.push({ timestamp: Date(), values: myJson });
+              temperatureData.push({ timestamp: new Date(), values: myJson });
 
               var data = new google.visualization.DataTable();
               data.addColumn("datetime", "Tid");
