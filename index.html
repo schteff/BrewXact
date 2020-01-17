@@ -47,7 +47,7 @@
               dataTable.addRow(rowArray);
 
               for (var i = 0; i < jsonTemp.length; i++) {
-                dataTable.setColumnLabel(i + 1, document.getElementById(jsonTemp[i] + "_name")).value;
+                dataTable.setColumnLabel(i + 1, document.getElementById(jsonTemp[i].id + "_name")).value;
               }
 
               chart.draw(dataTable, options);
