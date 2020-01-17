@@ -64,7 +64,7 @@
                 const customName = document.getElementById(jsonTemp[i].id + "_name").value;
                 chartDataTable.setColumnLabel(i + 1, customName);
 
-                gaugeDataTable.setColumnLabel("string", customName);
+                gaugeDataTable.setColumnLabel(i, customName);
                 gaugeDataTable.setValue(i, 1, jsonTemp[i].t);
               }
 
