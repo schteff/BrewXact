@@ -8,21 +8,35 @@
       google.charts.setOnLoadCallback(drawChart);
 
       function drawChart() {
+        const lineChart = new google.visualization.LineChart(document.getElementById("curve_chart"));
+
+        const options = {
+          title: "Temperaturen",
+          curveType: "function",
+          legend: { position: "bottom" }
+        };
+
+        var gauge = new google.visualization.Gauge(document.getElementById("chart_div"));
+
+        var gaugeOptions = {
+          width: 400,
+          height: 120,
+          redFrom: 90,
+          redTo: 100,
+          yellowFrom: 75,
+          yellowTo: 90,
+          minorTicks: 5
+        };
+        const wrapper = document.getElementById("sensor_names");
+
         fetchTemps(firstTemps => {
-          const chart = new google.visualization.LineChart(document.getElementById("curve_chart"));
+          const chartDataTable = new google.visualization.DataTable();
+          const gaugeDataTable = new google.visualization.DataTable();
 
-          const options = {
-            title: "Temperaturen",
-            curveType: "function",
-            legend: { position: "bottom" }
-          };
-
-          const wrapper = document.getElementById("sensor_names");
-
-          const dataTable = new google.visualization.DataTable();
-          dataTable.addColumn("datetime", "Tid");
+          chartDataTable.addColumn("datetime", "Tid");
           firstTemps.forEach(sensor => {
-            dataTable.addColumn("number", sensor.id);
+            chartDataTable.addColumn("number", sensor.id);
+            gaugeDataTable.addColumn("number", sensor.id);
 
             var label = document.createElement("SPAN");
             label.append(sensor.id + ": ");
@@ -44,13 +58,18 @@
               const rowArray = [timestamp];
               jsonTemp.forEach(tempObj => rowArray.push(tempObj.t));
 
-              dataTable.addRow(rowArray);
+              chartDataTable.addRow(rowArray);
 
               for (var i = 0; i < jsonTemp.length; i++) {
-                dataTable.setColumnLabel(i + 1, document.getElementById(jsonTemp[i].id + "_name").value);
+                const customName = document.getElementById(jsonTemp[i].id + "_name").value;
+                chartDataTable.setColumnLabel(i + 1, customName);
+
+                gaugeDataTable.setColumnLabel("string", customName);
+                gaugeDataTable.setValue(i, 1, jsonTemp[i].t);
               }
 
-              chart.draw(dataTable, options);
+              lineChart.draw(chartDataTable, options);
+              gauge.draw(gaugeDataTable, gaugeOptions);
             });
           }, 3000);
         });
@@ -64,6 +83,7 @@
     </script>
   </head>
   <body>
+    <div id="gauge_chart" style="width: 400px; height: 120px;"></div>
     <div id="curve_chart" style="width: 900px; height: 500px"></div>
     <div>
       <h1>Sensors</h1>
