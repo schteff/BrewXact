@@ -112,7 +112,8 @@
       <span>Mintemp</span><input id="minTemp" type="text" value="66" /><br />
       <input id="beepCheckBox" type="checkbox">Beep</input>
     </div>
-
-    <embed src="beep.wav" autostart="false" width="0" height="0" id="sound1" enablejavascript="true" />
+    <audio id="sound1" autoplay="false" >
+        <source src="beep.wav" type="audio/wav">
+    </audio>
   </body>
 </html>
