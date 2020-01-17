@@ -11,7 +11,6 @@ fs.readFile("./index.html", function(err, html) {
   }
   http
     .createServer(function(request, response) {
-      console.log(request.url);
       if (request.url === "/favicon.ico") {
         response.statusCode = 404;
         response.end();
