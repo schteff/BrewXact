@@ -10,26 +10,28 @@
       const temperatureData = [];
 
       function drawChart() {
+        const chart = new google.visualization.LineChart(document.getElementById("curve_chart"));
+
+        const options = {
+          title: "Temperaturen",
+          curveType: "function",
+          legend: { position: "bottom" }
+        };
+
+        const dataTable = new google.visualization.DataTable();
+        dataTable.addColumn("datetime", "Tid");
+        dataTable.addColumn("number", "Temp");
+
         setInterval(function() {
           fetch("/temps")
             .then(response => response.json())
-            .then(myJson => {
-              temperatureData.push({ timestamp: new Date(), values: myJson });
+            .then(jsonTemp => {
+              const timestamp = new Date();
+              temperatureData.push({ timestamp: new Date(), values: jsonTemp });
 
-              var data = new google.visualization.DataTable();
-              data.addColumn("datetime", "Tid");
-              data.addColumn("number", "Temp");
-              data.addRows(temperatureData.map(d => [d.timestamp, d.values[0].t]));
+              dataTable.addRow([timestamp, jsonTemp[0].t]);
 
-              var options = {
-                title: "Temperaturen",
-                curveType: "function",
-                legend: { position: "bottom" }
-              };
-
-              var chart = new google.visualization.LineChart(document.getElementById("curve_chart"));
-
-              chart.draw(data, options);
+              chart.draw(dataTable, options);
             });
         }, 3000);
       }
