@@ -8,6 +8,13 @@
       google.charts.setOnLoadCallback(drawChart);
 
       function drawChart() {
+        fetch("/temps")
+          .then(response => {
+            return response.json();
+          })
+          .then(myJson => {
+            console.log(myJson);
+          });
         var data = google.visualization.arrayToDataTable([
           ["Year", "Sales", "Expenses"],
           ["2004", 1000, 400],
