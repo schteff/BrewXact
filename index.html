@@ -23,10 +23,17 @@
           dataTable.addColumn("datetime", "Tid");
           firstTemps.forEach(sensor => {
             dataTable.addColumn("number", sensor.id);
+
+            var label = document.createElement("SPAN");
+            label.append(sensor.id);
+            label.append(label);
+
             var x = document.createElement("INPUT");
             x.setAttribute("type", "text");
-            x.setValue(sensor.id);
+            x.setAttribute("value", sensor.id);
             wrapper.append(x);
+
+            wrapper.append(document.createElement("BR"));
           });
 
           setInterval(function() {
