@@ -51,7 +51,7 @@
             wrapper.append(document.createElement("BR"));
           });
 
-          chartDataTable.addRows(firstTemps.length);
+          gaugeDataTable.addRows(firstTemps.length);
 
           setInterval(function() {
             fetchTemps(jsonTemp => {
