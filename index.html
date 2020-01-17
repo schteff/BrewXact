@@ -18,15 +18,6 @@
 
         var gaugeChart = new google.visualization.Gauge(document.getElementById("gauge_chart"));
 
-        var gaugeOptions = {
-          width: 400,
-          height: 120,
-          redFrom: 90,
-          redTo: 100,
-          yellowFrom: 75,
-          yellowTo: 90,
-          minorTicks: 5
-        };
         const wrapper = document.getElementById("sensor_names");
 
         fetchTemps(firstTemps => {
@@ -62,15 +53,34 @@
 
               chartDataTable.addRow(rowArray);
 
+              const minTemp = document.getElementById("minTemp").value;
+              const maxTemp = document.getElementById("maxTemp").value;
+
               for (var i = 0; i < jsonTemp.length; i++) {
                 const customName = document.getElementById(jsonTemp[i].id + "_name").value;
                 chartDataTable.setColumnLabel(i + 1, customName);
 
+                const beep = document.getElementById("beepCheckBox").value;
+                const currentTemp = jsonTemp[i].t;
+                if(beep && currentTemp < minTemp || currentTemp > maxTemp){
+                    Beep();
+                }
+
                 gaugeDataTable.setColumnLabel(i, customName);
-                gaugeDataTable.setValue(i, 1, jsonTemp[i].t);
+                gaugeDataTable.setValue(i, 1, currentTemp);
               }
 
               lineChart.draw(chartDataTable, options);
+
+              var gaugeOptions = {
+                width: 400,
+                height: 120,
+                redFrom: maxTemp,
+                redTo: 100,
+                yellowFrom: 0,
+                yellowTo: minTemp,
+                minorTicks: 5
+              };
               gaugeChart.draw(gaugeDataTable, gaugeOptions);
             });
           }, 3000);
@@ -82,6 +92,11 @@
           .then(response => response.json())
           .then(jsonTemp => callback(jsonTemp));
       }
+
+      function Beep() {
+        var sound = document.getElementById("sound1");
+        sound.Play();
+      }
     </script>
   </head>
   <body>
@@ -91,5 +106,13 @@
       <h1>Sensors</h1>
       <div id="sensor_names"></div>
     </div>
+    <input>
+      <h1>Settings</h1>
+      <span>Maxtemp</span><input id="maxTemp" type="text" value="69" /><br />
+      <span>Mintemp</span><input id="minTemp" type="text" value="66" /><br />
+      <input id="beepCheckBox" type="checkbox">Beep</input>
+    </div>
+
+    <embed src="beep.wav" autostart="false" width="0" height="0" id="sound1" enablejavascript="true" />
   </body>
 </html>
