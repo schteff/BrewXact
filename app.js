@@ -12,7 +12,10 @@ fs.readFile("./index.html", function(err, html) {
   http
     .createServer(function(request, response) {
       console.log(request.url);
-      if (request.url === "/temps") {
+      if (request.url === "/favicon.ico") {
+        response.statusCode = 404;
+        response.end();
+      } else if (request.url === "/temps") {
         response.statusCode = 200;
         response.setHeader("Content-Type", "application/json");
         const temps = sensor.readAllC();
