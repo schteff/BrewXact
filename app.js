@@ -20,6 +20,14 @@ fs.readFile("./index.html", function(err, html) {
         const temps = sensor.readAllC();
         console.log(temps);
         response.end(JSON.stringify(temps));
+      } else if (request.url === "/beep.wav") {
+        fs.readFile("./beep.wav", function(err, beep) {
+          if (err) {
+            throw err;
+          }
+          response.write(beep);
+          response.end();
+        });
       } else {
         response.writeHeader(200, { "Content-Type": "text/html" });
         response.write(html);
