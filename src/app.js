@@ -11,17 +11,18 @@ fs.readFile("./index.html", function(err, html) {
   }
   http
     .createServer(function(request, response) {
-      console.log(request);
-      response.writeHeader(200, { "Content-Type": "text/html" });
-      response.write(html);
-      response.end();
-
-      response.statusCode = 200;
-      response.setHeader("Content-Type", "application/json");
-      const temps = sensor.readAllC();
-      console.log(temps);
-
-      response.end(JSON.stringify(temps));
+      if (request.url.indexOf("/temps") > 0) {
+        response.statusCode = 200;
+        response.setHeader("Content-Type", "application/json");
+        const temps = sensor.readAllC();
+        console.log(temps);
+        response.end(JSON.stringify(temps));
+      } else {
+        response.writeHeader(200, { "Content-Type": "text/html" });
+        response.write(html);
+        response.end();
+        console.log("Serving html");
+      }
     })
     .listen(port, hostname, () => {
       console.log(`Temp server running at http://${hostname}:${port}/`);
