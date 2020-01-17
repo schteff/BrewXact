@@ -1,0 +1,12 @@
+{
+  "name": "brew-xact",
+  "version": "1.0.0",
+  "description": "Accurate temperature alerts",
+  "main": "index.js",
+  "repository": "https://github.com/schteff/BrewXact",
+  "author": "Stefan Sigvardsson",
+  "license": "MIT",
+  "dependencies": {
+    "ds18b20-raspi": "^0.3.4"
+  }
+}
