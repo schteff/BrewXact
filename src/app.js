@@ -11,6 +11,7 @@ fs.readFile("./index.html", function(err, html) {
   }
   http
     .createServer(function(request, response) {
+      console.log(request.url);
       if (request.url.indexOf("/temps") > 0) {
         response.statusCode = 200;
         response.setHeader("Content-Type", "application/json");
