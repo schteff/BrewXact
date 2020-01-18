@@ -80,9 +80,14 @@
                 height: 120,
                 redFrom: maxTemp,
                 redTo: 100,
+                yellowColor: "#1FAAF1",
                 yellowFrom: 0,
                 yellowTo: minTemp,
-                minorTicks: 5
+                minorTicks: 5,
+                min: 20,
+                max: 100,
+                greenFrom: minTemp,
+                greenTo: maxTemp
               };
               gaugeChart.draw(gaugeDataTable, gaugeOptions);
             });
