@@ -23,6 +23,8 @@
         fetchTemps(firstTemps => {
           const chartDataTable = new google.visualization.DataTable();
           const gaugeDataTable = new google.visualization.DataTable();
+          gaugeDataTable.addColumn("string", "Label");
+          gaugeDataTable.addColumn("number", "Value");
 
           chartDataTable.addColumn("datetime", "Tid");
           firstTemps.forEach(sensor => {
@@ -43,10 +45,8 @@
 
             // -----
 
-            gaugeDataTable.addColumn("number", sensor.id);
+            gaugeDataTable.addRow([sensor.id, sensor.t]);
           });
-
-          gaugeDataTable.addRows(firstTemps.length);
 
           setInterval(function() {
             fetchTemps(jsonTemp => {
@@ -69,7 +69,7 @@
                   beep();
                 }
 
-                gaugeDataTable.setColumnLabel(i, customName);
+                gaugeDataTable.setValue(i, 0, customName);
                 gaugeDataTable.setValue(i, 1, currentTemp);
               }
 
