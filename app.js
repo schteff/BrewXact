@@ -1,41 +1,21 @@
-const http = require("http");
 const sensor = require("ds18b20-raspi");
-const fs = require("fs");
 
-const hostname = "127.0.0.1";
-const port = 3000;
+const config = require("./config/config.js"), // import config variables
+  port = config.port, // set the port
+  express = require("express"), // use express as the framwork
+  app = express(), // create the server using express
+  path = require("path"); // utility module
 
-fs.readFile("./index.html", function(err, html) {
-  if (err) {
-    throw err;
-  }
-  http
-    .createServer(function(request, response) {
-      if (request.url === "/favicon.ico") {
-        response.statusCode = 404;
-        response.end();
-      } else if (request.url === "/temps") {
-        response.statusCode = 200;
-        response.setHeader("Content-Type", "application/json");
-        const temps = sensor.readAllC();
-        console.log(temps);
-        response.end(JSON.stringify(temps));
-      } else if (request.url === "/beep.wav") {
-        fs.readFile("./beep.wav", function(err, beep) {
-          if (err) {
-            throw err;
-          }
-          response.write(beep);
-          response.end();
-        });
-      } else {
-        response.writeHeader(200, { "Content-Type": "text/html" });
-        response.write(html);
-        response.end();
-        console.log("Serving html");
-      }
-    })
-    .listen(port, hostname, () => {
-      console.log(`Temp server running at http://${hostname}:${port}/`);
-    });
+app.use(express.static(path.join(__dirname, "public"))); // this middleware serves static files, such as .js, .img, .css files
+
+// Initialize server
+var server = app.listen(port, function() {
+  console.log("Listening on port %d", server.address().port);
+});
+
+// Use '/' to go to index.html via static middleware
+
+app.get("/temps", function(req, res) {
+  const temps = sensor.readAllC();
+  res.send(JSON.stringify(temps));
 });
