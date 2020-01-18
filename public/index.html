@@ -10,11 +10,6 @@
       function drawChart() {
         const lineChart = new google.visualization.LineChart(document.getElementById("curve_chart"));
 
-        var lineOptions = {
-          title: "Temperaturen",
-          curveType: "function",
-          legend: { position: "bottom" }
-        };
         var gaugeOptions = {
           width: 400,
           height: 120,
@@ -26,7 +21,7 @@
           max: 100
         };
 
-        var gaugeChart = new google.visualization.Gauge(document.getElementById("gauge_chart"));
+        const gaugeChart = new google.visualization.Gauge(document.getElementById("gauge_chart"));
 
         const wrapper = document.getElementById("sensor_names");
 
@@ -38,15 +33,17 @@
           gaugeDataTable.addColumn("string", "Label");
           gaugeDataTable.addColumn("number", "Value");
 
+          const series = [];
+
           firstTemps.forEach(sensor => {
             chartDataTable.addColumn("number", sensor.id);
 
             // -----
-            var label = document.createElement("SPAN");
+            const label = document.createElement("SPAN");
             label.append(sensor.id + ": ");
             wrapper.append(label);
 
-            var x = document.createElement("INPUT");
+            const x = document.createElement("INPUT");
             x.setAttribute("id", sensor.id + "_name");
             x.setAttribute("type", "text");
             x.setAttribute("value", sensor.id);
@@ -57,10 +54,22 @@
             // -----
 
             gaugeDataTable.addRow([sensor.id, sensor.t]);
+
+            series.push({});
           });
 
           chartDataTable.addColumn("number", "Mintemp");
           chartDataTable.addColumn("number", "Maxtemp");
+          series.push({ color: "#1FAAF1" });
+          series.push({ color: "#E5394E" });
+
+          const chartOptions = {
+            title: "Temperaturen",
+            curveType: "function",
+            legend: { position: "bottom" },
+            focusTarget: "category",
+            series: series
+          };
 
           setInterval(function() {
             fetchTemps(jsonTemp => {
@@ -89,10 +98,7 @@
                 gaugeDataTable.setValue(i, 1, currentTemp);
               }
 
-              lineChart.draw(chartDataTable, lineOptions);
-              lineOptions = {
-                ...lineOptions
-              };
+              lineChart.draw(chartDataTable, chartOptions);
               gaugeOptions = {
                 ...gaugeOptions,
                 yellowTo: minTemp,
