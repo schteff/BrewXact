@@ -28,12 +28,12 @@
         fetchTemps(firstTemps => {
           const chartDataTable = new google.visualization.DataTable();
           chartDataTable.addColumn("datetime", "Tid");
+          chartDataTable.addColumn("number", "Mintemp");
+          chartDataTable.addColumn("number", "Maxtemp");
 
           const gaugeDataTable = new google.visualization.DataTable();
           gaugeDataTable.addColumn("string", "Label");
           gaugeDataTable.addColumn("number", "Value");
-
-          const series = [];
 
           firstTemps.forEach(sensor => {
             chartDataTable.addColumn("number", sensor.id);
@@ -55,39 +55,30 @@
 
             gaugeDataTable.addRow([sensor.id, sensor.t]);
 
-            series.push({});
           });
 
-          chartDataTable.addColumn("number", "Mintemp");
-          chartDataTable.addColumn("number", "Maxtemp");
-          series.push({ color: "#1FAAF1" });
-          series.push({ color: "#E5394E" });
 
           const chartOptions = {
             title: "Temperaturen",
             curveType: "function",
             legend: { position: "bottom" },
             focusTarget: "category",
-            series: series
           };
 
           setInterval(function() {
+            const minTemp = Number(document.getElementById("minTemp").value);
+            const maxTemp = Number(document.getElementById("maxTemp").value);
+
             fetchTemps(jsonTemp => {
               const timestamp = new Date();
 
-              const rowArray = [timestamp];
+              const rowArray = [timestamp, minTemp, maxTemp];
               jsonTemp.forEach(tempObj => rowArray.push(tempObj.t));
-
-              const minTemp = Number(document.getElementById("minTemp").value);
-              const maxTemp = Number(document.getElementById("maxTemp").value);
-
-              rowArray.push(minTemp);
-              rowArray.push(maxTemp);
               chartDataTable.addRow(rowArray);
 
               for (var i = 0; i < jsonTemp.length; i++) {
                 const customName = document.getElementById(jsonTemp[i].id + "_name").value;
-                chartDataTable.setColumnLabel(i + 1, customName);
+                chartDataTable.setColumnLabel(i + 3, customName);
 
                 const currentTemp = jsonTemp[i].t;
                 if (currentTemp < minTemp || currentTemp > maxTemp) {
