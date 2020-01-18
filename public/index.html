@@ -14,9 +14,17 @@
 
       function drawChart() {
         const lineChart = new google.visualization.LineChart(document.getElementById("curve_chart"));
+        const chartDataTable = new google.visualization.DataTable();
 
-        const btn = document.getElementById("download_btn");
-        btn.addEventListener("click", () => downloadChart(lineChart));
+        const downloadBtn = document.getElementById("download_btn");
+        downloadBtn.addEventListener("click", () => downloadChart(lineChart));
+
+        const clearBtn = document.getElementById("clear_btn");
+        clearBtn.addEventListener("click", () => {
+          fetch("/clear").then(response => {
+            chartDataTable.removeRows(0, chartDataTable.getNumberOfRows());
+          });
+        });
 
         var gaugeOptions = {
           width: 400,
@@ -34,9 +42,6 @@
         const wrapper = document.getElementById("sensor_names");
 
         init(firstTemps => {
-          console.log(firstTemps);
-
-          const chartDataTable = new google.visualization.DataTable();
           chartDataTable.addColumn("datetime", "Tid");
           chartDataTable.addColumn("number", "Mintemp");
           chartDataTable.addColumn("number", "Maxtemp");
@@ -70,7 +75,8 @@
             title: "Temperaturen",
             curveType: "function",
             legend: { position: "bottom" },
-            focusTarget: "category"
+            focusTarget: "category",
+            hAxis: { format: "yyyy-MM-dd HH:mm:ss" }
           };
 
           firstTemps.forEach(obj => {
@@ -150,6 +156,7 @@
       <h1>Settings</h1>
       <span>Maxtemp</span><input id="maxTemp" type="text" value="69" /><br />
       <span>Mintemp</span><input id="minTemp" type="text" value="66" /><br />
+      <input type="button" id="clear_btn" value="Clear all history" />
     </div>
     <audio id="sound1" autoplay="false" muted="true" controls>
       <source src="beep.wav" type="audio/wav" />

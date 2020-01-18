@@ -39,11 +39,20 @@ app.get("/temps", function(req, res) {
 });
 
 app.get("/init", function(req, res) {
-  const temps = sensor.readAllC();
-  fileArray.push({ time: new Date().getTime(), temps: temps });
+  fileArray.push({ time: new Date().getTime(), temps: sensor.readAllC() });
   jsonfile.writeFile(file, fileArray, function(err) {
     if (err) console.error(err);
   });
 
   res.send(JSON.stringify(fileArray));
+});
+
+app.get("/clear", function(req, res) {
+  fileArray = [{ time: new Date().getTime(), temps: sensor.readAllC() }];
+  jsonfile.writeFile(file, fileArray, function(err) {
+    if (err) console.error(err);
+  });
+
+  res.status(200);
+  res.end();
 });
