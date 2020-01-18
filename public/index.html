@@ -10,10 +10,20 @@
       function drawChart() {
         const lineChart = new google.visualization.LineChart(document.getElementById("curve_chart"));
 
-        const options = {
+        var lineOptions = {
           title: "Temperaturen",
           curveType: "function",
           legend: { position: "bottom" }
+        };
+        var gaugeOptions = {
+          width: 400,
+          height: 120,
+          redTo: 100,
+          yellowColor: "#1FAAF1",
+          yellowFrom: 0,
+          minorTicks: 5,
+          min: 20,
+          max: 100
         };
 
         var gaugeChart = new google.visualization.Gauge(document.getElementById("gauge_chart"));
@@ -22,11 +32,12 @@
 
         fetchTemps(firstTemps => {
           const chartDataTable = new google.visualization.DataTable();
+          chartDataTable.addColumn("datetime", "Tid");
+
           const gaugeDataTable = new google.visualization.DataTable();
           gaugeDataTable.addColumn("string", "Label");
           gaugeDataTable.addColumn("number", "Value");
 
-          chartDataTable.addColumn("datetime", "Tid");
           firstTemps.forEach(sensor => {
             chartDataTable.addColumn("number", sensor.id);
 
@@ -48,6 +59,9 @@
             gaugeDataTable.addRow([sensor.id, sensor.t]);
           });
 
+          chartDataTable.addColumn("number", "Mintemp");
+          chartDataTable.addColumn("number", "Maxtemp");
+
           setInterval(function() {
             fetchTemps(jsonTemp => {
               const timestamp = new Date();
@@ -55,10 +69,12 @@
               const rowArray = [timestamp];
               jsonTemp.forEach(tempObj => rowArray.push(tempObj.t));
 
-              chartDataTable.addRow(rowArray);
-
               const minTemp = document.getElementById("minTemp").value;
               const maxTemp = document.getElementById("maxTemp").value;
+
+              rowArray.push(minTemp);
+              rowArray.push(maxTemp);
+              chartDataTable.addRow(rowArray);
 
               for (var i = 0; i < jsonTemp.length; i++) {
                 const customName = document.getElementById(jsonTemp[i].id + "_name").value;
@@ -73,21 +89,16 @@
                 gaugeDataTable.setValue(i, 1, currentTemp);
               }
 
-              lineChart.draw(chartDataTable, options);
-
-              var gaugeOptions = {
-                width: 400,
-                height: 120,
-                redFrom: maxTemp,
-                redTo: 100,
-                yellowColor: "#1FAAF1",
-                yellowFrom: 0,
+              lineChart.draw(chartDataTable, lineOptions);
+              lineOptions = {
+                ...lineOptions
+              };
+              gaugeOptions = {
+                ...gaugeOptions,
                 yellowTo: minTemp,
-                minorTicks: 5,
-                min: 20,
-                max: 100,
                 greenFrom: minTemp,
-                greenTo: maxTemp
+                greenTo: maxTemp,
+                redFrom: maxTemp
               };
               gaugeChart.draw(gaugeDataTable, gaugeOptions);
             });
