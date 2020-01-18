@@ -9,6 +9,7 @@
   "private": true,
   "dependencies": {
     "ds18b20-raspi": "^0.3.4",
-    "express": "^4.17.1"
+    "express": "^4.17.1",
+    "jsonfile": "^5.0.0"
   }
 }

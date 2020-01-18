@@ -7,8 +7,16 @@
       google.charts.load("current", { packages: ["corechart", "gauge"] });
       google.charts.setOnLoadCallback(drawChart);
 
+      function downloadChart(chart) {
+        const img_div = document.getElementById("img_div");
+        img_div.innerHTML = '<img src="' + chart.getImageURI() + '">';
+      }
+
       function drawChart() {
         const lineChart = new google.visualization.LineChart(document.getElementById("curve_chart"));
+
+        const btn = document.getElementById("download_btn");
+        btn.addEventListener("click", () => downloadChart(lineChart));
 
         var gaugeOptions = {
           width: 400,
@@ -25,7 +33,9 @@
 
         const wrapper = document.getElementById("sensor_names");
 
-        fetchTemps(firstTemps => {
+        init(firstTemps => {
+          console.log(firstTemps);
+
           const chartDataTable = new google.visualization.DataTable();
           chartDataTable.addColumn("datetime", "Tid");
           chartDataTable.addColumn("number", "Mintemp");
@@ -35,7 +45,7 @@
           gaugeDataTable.addColumn("string", "Label");
           gaugeDataTable.addColumn("number", "Value");
 
-          firstTemps.forEach(sensor => {
+          firstTemps[0].temps.forEach(sensor => {
             chartDataTable.addColumn("number", sensor.id);
 
             // -----
@@ -54,16 +64,22 @@
             // -----
 
             gaugeDataTable.addRow([sensor.id, sensor.t]);
-
           });
-
 
           const chartOptions = {
             title: "Temperaturen",
             curveType: "function",
             legend: { position: "bottom" },
-            focusTarget: "category",
+            focusTarget: "category"
           };
+
+          firstTemps.forEach(obj => {
+            const minTemp = Number(document.getElementById("minTemp").value);
+            const maxTemp = Number(document.getElementById("maxTemp").value);
+            const rowArray = [new Date(obj.time), minTemp, maxTemp];
+            obj.temps.forEach(tempObj => rowArray.push(tempObj.t));
+            chartDataTable.addRow(rowArray);
+          });
 
           setInterval(function() {
             const minTemp = Number(document.getElementById("minTemp").value);
@@ -103,6 +119,12 @@
         });
       }
 
+      function init(callback) {
+        fetch("/init")
+          .then(response => response.json())
+          .then(json => callback(json));
+      }
+
       function fetchTemps(callback) {
         fetch("/temps")
           .then(response => response.json())
@@ -118,6 +140,8 @@
   <body>
     <div id="gauge_chart" style="width: 400px; height: 120px;"></div>
     <div id="curve_chart" style="width: 900px; height: 500px"></div>
+    <input type="button" id="download_btn" value="Download chart image" />
+    <div id="img_div"></div>
     <div>
       <h1>Sensors</h1>
       <div id="sensor_names"></div>
