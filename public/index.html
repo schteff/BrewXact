@@ -69,8 +69,8 @@
               const rowArray = [timestamp];
               jsonTemp.forEach(tempObj => rowArray.push(tempObj.t));
 
-              const minTemp = document.getElementById("minTemp").value;
-              const maxTemp = document.getElementById("maxTemp").value;
+              const minTemp = Number(document.getElementById("minTemp").value);
+              const maxTemp = Number(document.getElementById("maxTemp").value);
 
               rowArray.push(minTemp);
               rowArray.push(maxTemp);
