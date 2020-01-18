@@ -27,8 +27,8 @@
           chartDataTable.addColumn("datetime", "Tid");
           firstTemps.forEach(sensor => {
             chartDataTable.addColumn("number", sensor.id);
-            gaugeDataTable.addColumn("number", sensor.id);
 
+            // -----
             var label = document.createElement("SPAN");
             label.append(sensor.id + ": ");
             wrapper.append(label);
@@ -40,6 +40,10 @@
             wrapper.append(x);
 
             wrapper.append(document.createElement("BR"));
+
+            // -----
+
+            gaugeDataTable.addColumn("number", sensor.id);
           });
 
           gaugeDataTable.addRows(firstTemps.length);
@@ -60,10 +64,9 @@
                 const customName = document.getElementById(jsonTemp[i].id + "_name").value;
                 chartDataTable.setColumnLabel(i + 1, customName);
 
-                const beep = document.getElementById("beepCheckBox").value;
                 const currentTemp = jsonTemp[i].t;
-                if(beep && currentTemp < minTemp || currentTemp > maxTemp){
-                    Beep();
+                if (currentTemp < minTemp || currentTemp > maxTemp) {
+                  beep();
                 }
 
                 gaugeDataTable.setColumnLabel(i, customName);
@@ -93,7 +96,7 @@
           .then(jsonTemp => callback(jsonTemp));
       }
 
-      function Beep() {
+      function beep() {
         var sound = document.getElementById("sound1");
         sound.play();
       }
@@ -110,10 +113,9 @@
       <h1>Settings</h1>
       <span>Maxtemp</span><input id="maxTemp" type="text" value="69" /><br />
       <span>Mintemp</span><input id="minTemp" type="text" value="66" /><br />
-      <input id="beepCheckBox" type="checkbox">Beep</input>
     </div>
-    <audio id="sound1" autoplay="false" muted="true">
-        <source src="beep.wav" type="audio/wav">
+    <audio id="sound1" autoplay="false" muted="true" controls>
+      <source src="beep.wav" type="audio/wav" />
     </audio>
   </body>
 </html>
