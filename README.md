@@ -1,2 +1,3 @@
 # BrewXact
-Brewing temperature monitor using DS18B20
+
+Brewing (and soon fermenting) temperature monitor using DS18B20
