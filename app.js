@@ -59,6 +59,12 @@ app.get("/init", function(req, res) {
 });
 
 app.get("/clear", function(req, res) {
+  //Backup old file
+  jsonfile.writeFileSync(
+    "../data" + new Date().getTime() + ".json",
+    dataFileArray
+  );
+
   dataFileArray = [{ time: new Date().getTime(), temps: getTemps() }];
   saveDataFile();
   res.status(200);
