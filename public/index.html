@@ -29,7 +29,15 @@
         const minTemp = Number(document.getElementById("minTemp").value);
         const maxTemp = Number(document.getElementById("maxTemp").value);
         const customNames = customNameInputs.map(input => input.value);
-        return { minTemp: minTemp, maxTemp: maxTemp, customNames: customNames };
+        const notify = document.getElementById("notificationsEnabled").checked;
+        const pushBulletToken = document.getElementById("pushBulletToken").value;
+        return {
+          minTemp: minTemp,
+          maxTemp: maxTemp,
+          customNames: customNames,
+          notify: notify,
+          pushBulletToken: pushBulletToken
+        };
       }
 
       const customNameInputs = [];
@@ -222,6 +230,18 @@
           <li class="collection-item"><span>Mintemp: </span><input id="minTemp" type="text" value="64" /></li>
           <li class="collection-header"><h5>Sensor names</h5></li>
           <li class="collection-item"><div id="sensor_names"></div></li>
+          <li class="collection-header"><h5>Pushbullet</h5></li>
+          <li class="collection-item"><span>Pushbullet Access Token: </span><input id="pushBulletToken" type="text" /></li>
+          <li class="collection-header">
+            <span>Found at <a href="https://www.pushbullet.com/#settings">https://www.pushbullet.com/#settings</a></span>
+          </li>
+
+          <li class="collection-item">
+            <label>
+              <input id="notificationsEnabled" type="checkbox" />
+              <span>Send notifications</span>
+            </label>
+          </li>
         </ul>
         <a id="save_btn" class="waves-effect waves-light btn-small"><i class="material-icons left">save</i>Save settings</a>
       </div>

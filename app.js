@@ -1,6 +1,7 @@
 const sensor = require("ds18b20-raspi");
 const jsonfile = require("jsonfile");
 const bonjour = require("bonjour")();
+const PushBullet = require("pushbullet");
 
 const config = require("./config/config.js"), // import config variables
   port = config.port, // set the port
@@ -20,7 +21,6 @@ bonjour.publish({ name: "BrewXact", type: "http", host: "brew", port: port });
 
 // Use '/' to go to index.html via static middleware
 const dataFile = "../data.json";
-const settingsFile = "../settings.json";
 var dataFileArray = [];
 jsonfile.readFile(dataFile, function(err, obj) {
   if (err) {
@@ -28,6 +28,16 @@ jsonfile.readFile(dataFile, function(err, obj) {
     saveDataFile();
   } else {
     dataFileArray = dataFileArray.concat(jsonfile.readFileSync(dataFile));
+  }
+});
+const settingsFile = "../settings.json";
+var settings = { minTemp: 62, maxTemp: 67 };
+jsonfile.readFile(settingsFile, function(err, obj) {
+  if (err) {
+    dataFileArray.push({ time: new Date().getTime(), temps: getTemps() });
+    saveDataFile();
+  } else {
+    settings = obj;
   }
 });
 
@@ -46,12 +56,44 @@ function saveDataFile() {
   });
 }
 
+/**
+ * The loop reading and storing the temperature values
+ */
+var notificationSent = false;
 setInterval(function() {
   const temps = getTemps();
   dataFileArray.push({ time: new Date().getTime(), temps: temps });
   saveDataFile();
-}, 3000);
 
+  //Check if outside min/max
+  if (settings.notify && settings.pushBulletToken) {
+    const tooColdTemps = temps.filter(t => t.t < settings.minTemp);
+    const tooWarmTemps = temps.filter(t => t.t > settings.maxTemp);
+    if (tooColdTemps.length > 0 || tooWarmTemps.length > 0) {
+      if (!notificationSent) {
+        const hotOrCold = tooColdTemps.length === 0 ? "warm" : "cold";
+        const noteTitle = "Temperature too " + hotOrCold;
+        const tempsOutOfRange = tooColdTemps.concat(tooWarmTemps);
+        const noteBody = "Temp: " + tempsOutOfRange.map(s => s.t + "°C").join(" & ");
+        const pusher = new PushBullet(settings.pushBulletToken);
+        pusher.devices(function(error, response) {
+          response.devices.forEach(device => {
+            pusher.note(device.iden, noteTitle, noteBody, function(error, response) {
+              console.log("Push sent successfully");
+            });
+          });
+        });
+      }
+      notificationSent = true;
+    } else {
+      notificationSent = false;
+    }
+  }
+}, config.logInterval);
+
+/**
+ * Server/API endpoints
+ */
 app.get("/temps", function(req, res) {
   const temps = dataFileArray[dataFileArray.length - 1].temps;
   res.send(JSON.stringify(temps));
@@ -72,22 +114,19 @@ app.get("/clear", function(req, res) {
 });
 
 app.get("/getSettings", function(req, res) {
-  try {
-    const settings = jsonfile.readFileSync(settingsFile);
-    const json = JSON.stringify(settings);
-    res.send(json);
-  } catch (error) {
-    // console.error(error);
-    res.status(404);
-    res.send("{}");
-  }
+  res.send(JSON.stringify(settings));
 });
 
 app.post("/saveSettings", function(req, res) {
   console.log("Saving settings " + JSON.stringify(req.body));
   jsonfile.writeFile(settingsFile, req.body, function(err) {
-    if (err) console.error(err);
+    if (err) {
+      console.error(err);
+      res.status(500);
+      res.end();
+    } else settings = req.body;
   });
+  notificationSent = false;
   res.status(200);
   res.end();
 });
