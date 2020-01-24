@@ -18,10 +18,6 @@ var server = app.listen(port, function() {
 
 bonjour.publish({ name: "BrewXact", type: "http", host: "brew", port: port });
 
-// bonjour.find({ type: "http" }, function(service) {
-//   console.log("Found an HTTP server:", service);
-// });
-
 // Use '/' to go to index.html via static middleware
 const dataFile = "../data.json";
 const settingsFile = "../settings.json";
@@ -44,26 +40,30 @@ function getTemps() {
   return temps;
 }
 
-app.get("/temps", function(req, res) {
+function saveDataFile() {
+  jsonfile.writeFile(dataFile, dataFileArray, function(err) {
+    if (err) console.error(err);
+  });
+}
+
+setInterval(function() {
   const temps = getTemps();
   dataFileArray.push({ time: new Date().getTime(), temps: temps });
   saveDataFile();
+}, 3000);
+
+app.get("/temps", function(req, res) {
+  const temps = dataFileArray[dataFileArray.length - 1].temps;
   res.send(JSON.stringify(temps));
 });
 
 app.get("/init", function(req, res) {
-  dataFileArray.push({ time: new Date().getTime(), temps: getTemps() });
-  saveDataFile();
-  const json = JSON.stringify(dataFileArray);
-  res.send(json);
+  res.send(JSON.stringify(dataFileArray));
 });
 
 app.get("/clear", function(req, res) {
   //Backup old file
-  jsonfile.writeFileSync(
-    "../data" + new Date().getTime() + ".json",
-    dataFileArray
-  );
+  jsonfile.writeFileSync("../data" + new Date().getTime() + ".json", dataFileArray);
 
   dataFileArray = [{ time: new Date().getTime(), temps: getTemps() }];
   saveDataFile();
@@ -92,10 +92,4 @@ app.post("/saveSettings", function(req, res) {
   res.end();
 });
 
-function saveDataFile() {
-  jsonfile.writeFile(dataFile, dataFileArray, function(err) {
-    if (err) console.error(err);
-  });
-}
-//TODO run loop in background to save temp values without an active GUI,
-// and notify (via email/nodemailer?) when outside settings limits
+// TODO and notify (via email/nodemailer?) when outside settings limits
