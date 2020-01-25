@@ -11,13 +11,22 @@
       google.charts.load("current", { packages: ["corechart", "gauge"] });
       google.charts.setOnLoadCallback(drawChart);
 
+      const refreshInterval = 6000;
+
       fetchSettings(settings => {
-        if (!settings.minTemp) {
-          return;
+        if (settings.minTemp) {
+          document.getElementById("minTemp").value = settings.minTemp;
         }
-        document.getElementById("minTemp").value = settings.minTemp;
-        document.getElementById("maxTemp").value = settings.maxTemp;
-        settings.customNames.forEach(name => customNames.push(name));
+        if (settings.maxTemp) {
+          document.getElementById("maxTemp").value = settings.maxTemp;
+        }
+        document.getElementById("notificationsEnabled").checked = settings.notify;
+        if (settings.pushBulletToken) {
+          document.getElementById("pushBulletToken").value = settings.pushBulletToken;
+        }
+        if (settings.customNames) {
+          settings.customNames.forEach(name => customNames.push(name));
+        }
       });
 
       function downloadChart(chart) {
@@ -156,7 +165,7 @@
               };
               gaugeChart.draw(gaugeDataTable, gaugeOptions);
             });
-          }, 3000);
+          }, refreshInterval);
         });
       }
 
@@ -197,12 +206,6 @@
       body {
         font-family: "Roboto", sans-serif;
       }
-      .container {
-      }
-      h1,
-      h2 {
-        color: #1f2421;
-      }
       td + td + td {
         display: none;
       }
@@ -233,13 +236,13 @@
           <li class="collection-header"><h5>Pushbullet</h5></li>
           <li class="collection-item"><span>Pushbullet Access Token: </span><input id="pushBulletToken" type="text" /></li>
           <li class="collection-header">
-            <span>Found at <a href="https://www.pushbullet.com/#settings">https://www.pushbullet.com/#settings</a></span>
+            <span>Created at <a href="https://www.pushbullet.com/#settings" target="_blank">https://www.pushbullet.com/#settings</a></span>
           </li>
 
           <li class="collection-item">
             <label>
               <input id="notificationsEnabled" type="checkbox" />
-              <span>Send notifications</span>
+              <span>Enable pushbullet notifications</span>
             </label>
           </li>
         </ul>

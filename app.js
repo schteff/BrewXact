@@ -44,7 +44,7 @@ jsonfile.readFile(settingsFile, function(err, obj) {
 function getTemps() {
   const temps = sensor.readAllC();
   if (temps.length == 0) {
-    temps.push({ id: "foo1", t: 30 + new Date().getSeconds() });
+    temps.push({ id: "foo1", t: 40 + new Date().getSeconds() });
     temps.push({ id: "foo2", t: 90 - new Date().getSeconds() });
   }
   return temps;
@@ -66,7 +66,7 @@ setInterval(function() {
   saveDataFile();
 
   //Check if outside min/max
-  if (settings.notify && settings.pushBulletToken) {
+  if (settings && settings.minTemp && settings.notify && settings.pushBulletToken) {
     const tooColdTemps = temps.filter(t => t.t < settings.minTemp);
     const tooWarmTemps = temps.filter(t => t.t > settings.maxTemp);
     if (tooColdTemps.length > 0 || tooWarmTemps.length > 0) {
@@ -79,7 +79,7 @@ setInterval(function() {
         pusher.devices(function(error, response) {
           response.devices.forEach(device => {
             pusher.note(device.iden, noteTitle, noteBody, function(error, response) {
-              console.log("Push sent successfully");
+              console.log("Push sent successfully to device " + device.nickname);
             });
           });
         });
