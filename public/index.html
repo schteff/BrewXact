@@ -27,6 +27,10 @@
         if (settings.customNames) {
           settings.customNames.forEach(name => customNames.push(name));
         }
+        if (settings.brewfatherStreamUrl) {
+          document.getElementById("brewfatherUrl").value = settings.brewfatherStreamUrl;
+        }
+        document.getElementById("brewfatherEnabled").checked = settings.logToBrewfather;
       });
 
       function downloadChart(chart) {
@@ -40,12 +44,16 @@
         const customNames = customNameInputs.map(input => input.value);
         const notify = document.getElementById("notificationsEnabled").checked;
         const pushBulletToken = document.getElementById("pushBulletToken").value;
+        const brewfatherStreamUrl = document.getElementById("brewfatherUrl").value;
+        const logToBrewfather = document.getElementById("brewfatherEnabled").checked;
         return {
           minTemp: minTemp,
           maxTemp: maxTemp,
           customNames: customNames,
           notify: notify,
-          pushBulletToken: pushBulletToken
+          pushBulletToken: pushBulletToken,
+          brewfatherStreamUrl: brewfatherStreamUrl,
+          logToBrewfather: logToBrewfather
         };
       }
 
@@ -238,11 +246,24 @@
           <li class="collection-header">
             <span>Created at <a href="https://www.pushbullet.com/#settings" target="_blank">https://www.pushbullet.com/#settings</a></span>
           </li>
-
           <li class="collection-item">
             <label>
               <input id="notificationsEnabled" type="checkbox" />
               <span>Enable pushbullet notifications</span>
+            </label>
+          </li>
+          <li class="collection-header"><h5>Brewfather</h5></li>
+          <li class="collection-item"><span>Brewfather custom stream URL: </span><input id="brewfatherUrl" type="text" /></li>
+          <li class="collection-header">
+            <span
+              >Created at
+              <a href="https://web.brewfather.app/#/tabs/settings/settings" target="_blank">https://web.brewfather.app/#/tabs/settings/settings</a></span
+            >
+          </li>
+          <li class="collection-item">
+            <label>
+              <input id="brewfatherEnabled" type="checkbox" />
+              <span>Enable brewfather logging</span>
             </label>
           </li>
         </ul>

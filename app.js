@@ -2,6 +2,7 @@ const sensor = require("ds18b20-raspi");
 const jsonfile = require("jsonfile");
 const bonjour = require("bonjour")();
 const PushBullet = require("pushbullet");
+const request = require("request");
 
 const config = require("./config/config.js"), // import config variables
   port = config.port, // set the port
@@ -56,6 +57,10 @@ function saveDataFile() {
   });
 }
 
+function lastReading() {
+  return dataFileArray[dataFileArray.length - 1].temps;
+}
+
 /**
  * The loop reading and storing the temperature values
  */
@@ -92,10 +97,45 @@ setInterval(function() {
 }, config.logInterval);
 
 /**
+ * The loop logging values to brewfather
+ */
+setInterval(function() {
+  trySendLastReadingToBrewfather();
+}, 900000);
+
+function trySendLastReadingToBrewfather() {
+  if (settings.logToBrewfather && settings.brewfatherStreamUrl) {
+    var index = 0;
+    const temps = lastReading();
+    settings.customNames.forEach(name => {
+      const brewfatherData = {
+        name: "Temp sensor " + index,
+        temp: temps[index].t,
+        temp_unit: "C", // C, F, K
+        comment: "Temperature reading",
+        beer: name
+      };
+
+      request.post(settings.brewfatherStreamUrl, { json: brewfatherData }, (error, response, body) => {
+        if (!error && response.statusCode == 200) {
+          console.log("Successful logging to brewfather");
+        } else if (error) {
+          console.error(error);
+        }
+      });
+
+      index++;
+    });
+  }
+}
+
+trySendLastReadingToBrewfather();
+
+/**
  * Server/API endpoints
  */
 app.get("/temps", function(req, res) {
-  const temps = dataFileArray[dataFileArray.length - 1].temps;
+  const temps = lastReading();
   res.send(JSON.stringify(temps));
 });
 
@@ -119,12 +159,22 @@ app.get("/getSettings", function(req, res) {
 
 app.post("/saveSettings", function(req, res) {
   console.log("Saving settings " + JSON.stringify(req.body));
+
+  const oldLogToBrewfather = settings.logToBrewfather;
+
   jsonfile.writeFile(settingsFile, req.body, function(err) {
     if (err) {
       console.error(err);
       res.status(500);
       res.end();
-    } else settings = req.body;
+    } else {
+      settings = req.body;
+
+      //If brewfather logging was switched to on from off, send a value
+      if (!oldLogToBrewfather && settings.logToBrewfather) {
+        trySendLastReadingToBrewfather();
+      }
+    }
   });
   notificationSent = false;
   res.status(200);
