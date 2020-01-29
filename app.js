@@ -58,7 +58,7 @@ function saveDataFile() {
 }
 
 function lastReading() {
-  return dataFileArray[dataFileArray.length - 1].temps;
+  return dataFileArray[dataFileArray.length - 1];
 }
 
 /**
@@ -71,7 +71,12 @@ setInterval(function() {
   saveDataFile();
 
   //Check if outside min/max
-  if (settings && settings.minTemp && settings.notify && settings.pushBulletToken) {
+  if (
+    settings &&
+    settings.minTemp &&
+    settings.notify &&
+    settings.pushBulletToken
+  ) {
     const tooColdTemps = temps.filter(t => t.t < settings.minTemp);
     const tooWarmTemps = temps.filter(t => t.t > settings.maxTemp);
     if (tooColdTemps.length > 0 || tooWarmTemps.length > 0) {
@@ -79,12 +84,18 @@ setInterval(function() {
         const hotOrCold = tooColdTemps.length === 0 ? "warm" : "cold";
         const noteTitle = "Temperature too " + hotOrCold;
         const tempsOutOfRange = tooColdTemps.concat(tooWarmTemps);
-        const noteBody = "Temp: " + tempsOutOfRange.map(s => s.t + "°C").join(" & ");
+        const noteBody =
+          "Temp: " + tempsOutOfRange.map(s => s.t + "°C").join(" & ");
         const pusher = new PushBullet(settings.pushBulletToken);
         pusher.devices(function(error, response) {
           response.devices.forEach(device => {
-            pusher.note(device.iden, noteTitle, noteBody, function(error, response) {
-              console.log("Push sent successfully to device " + device.nickname);
+            pusher.note(device.iden, noteTitle, noteBody, function(
+              error,
+              response
+            ) {
+              console.log(
+                "Push sent successfully to device " + device.nickname
+              );
             });
           });
         });
@@ -116,13 +127,17 @@ function trySendLastReadingToBrewfather() {
         beer: name
       };
 
-      request.post(settings.brewfatherStreamUrl, { json: brewfatherData }, (error, response, body) => {
-        if (!error && response.statusCode == 200) {
-          console.log("Successful logging to brewfather");
-        } else if (error) {
-          console.error(error);
+      request.post(
+        settings.brewfatherStreamUrl,
+        { json: brewfatherData },
+        (error, response, body) => {
+          if (!error && response.statusCode == 200) {
+            console.log("Successful logging to brewfather");
+          } else if (error) {
+            console.error(error);
+          }
         }
-      });
+      );
 
       index++;
     });
@@ -145,7 +160,10 @@ app.get("/init", function(req, res) {
 
 app.get("/clear", function(req, res) {
   //Backup old file
-  jsonfile.writeFileSync("../data" + new Date().getTime() + ".json", dataFileArray);
+  jsonfile.writeFileSync(
+    "../data" + new Date().getTime() + ".json",
+    dataFileArray
+  );
 
   dataFileArray = [{ time: new Date().getTime(), temps: getTemps() }];
   saveDataFile();

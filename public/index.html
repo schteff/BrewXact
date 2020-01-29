@@ -2,214 +2,22 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
-
-    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-    <script type="text/javascript">
-      google.charts.load("current", { packages: ["corechart", "gauge"] });
-      google.charts.setOnLoadCallback(drawChart);
-
-      const refreshInterval = 6000;
-
-      fetchSettings(settings => {
-        if (settings.minTemp) {
-          document.getElementById("minTemp").value = settings.minTemp;
-        }
-        if (settings.maxTemp) {
-          document.getElementById("maxTemp").value = settings.maxTemp;
-        }
-        document.getElementById("notificationsEnabled").checked = settings.notify;
-        if (settings.pushBulletToken) {
-          document.getElementById("pushBulletToken").value = settings.pushBulletToken;
-        }
-        if (settings.customNames) {
-          settings.customNames.forEach(name => customNames.push(name));
-        }
-        if (settings.brewfatherStreamUrl) {
-          document.getElementById("brewfatherUrl").value = settings.brewfatherStreamUrl;
-        }
-        document.getElementById("brewfatherEnabled").checked = settings.logToBrewfather;
-      });
-
-      function downloadChart(chart) {
-        const img_div = document.getElementById("img_div");
-        img_div.innerHTML = '<img src="' + chart.getImageURI() + '">';
-      }
-
-      function getGuiSettings() {
-        const minTemp = Number(document.getElementById("minTemp").value);
-        const maxTemp = Number(document.getElementById("maxTemp").value);
-        const customNames = customNameInputs.map(input => input.value);
-        const notify = document.getElementById("notificationsEnabled").checked;
-        const pushBulletToken = document.getElementById("pushBulletToken").value;
-        const brewfatherStreamUrl = document.getElementById("brewfatherUrl").value;
-        const logToBrewfather = document.getElementById("brewfatherEnabled").checked;
-        return {
-          minTemp: minTemp,
-          maxTemp: maxTemp,
-          customNames: customNames,
-          notify: notify,
-          pushBulletToken: pushBulletToken,
-          brewfatherStreamUrl: brewfatherStreamUrl,
-          logToBrewfather: logToBrewfather
-        };
-      }
-
-      const customNameInputs = [];
-      const customNames = [];
-
-      function drawChart() {
-        const lineChart = new google.visualization.LineChart(document.getElementById("curve_chart"));
-        const chartDataTable = new google.visualization.DataTable();
-
-        document.getElementById("download_btn").addEventListener("click", () => downloadChart(lineChart));
-        document.getElementById("clear_btn").addEventListener("click", () => {
-          fetch("/clear").then(response => {
-            chartDataTable.removeRows(0, chartDataTable.getNumberOfRows());
-          });
-        });
-        document.getElementById("save_btn").addEventListener("click", () => saveSettings(getGuiSettings()));
-
-        var gaugeOptions = {
-          width: 400,
-          height: 120,
-          redTo: 100,
-          yellowColor: "#1FAAF1",
-          yellowFrom: 0,
-          minorTicks: 5,
-          min: 20,
-          max: 100
-        };
-
-        const gaugeChart = new google.visualization.Gauge(document.getElementById("gauge_chart"));
-
-        const wrapper = document.getElementById("sensor_names");
-
-        init(firstTemps => {
-          chartDataTable.addColumn("datetime", "Tid");
-          chartDataTable.addColumn("number", "Min");
-          chartDataTable.addColumn("number", "Max");
-
-          const gaugeDataTable = new google.visualization.DataTable();
-          gaugeDataTable.addColumn("string", "Label");
-          gaugeDataTable.addColumn("number", "Value");
-
-          firstTemps[firstTemps.length - 1].temps.forEach(sensor => {
-            chartDataTable.addColumn("number", sensor.id);
-
-            // -----
-            const label = document.createElement("SPAN");
-            label.append(sensor.id + ": ");
-            wrapper.append(label);
-
-            const nameInput = document.createElement("INPUT");
-            customNameInputs.push(nameInput);
-            nameInput.setAttribute("id", sensor.id + "_name");
-            nameInput.setAttribute("type", "text");
-            const index = customNameInputs.indexOf(nameInput);
-            const customName = customNames[index];
-            nameInput.setAttribute("value", customName ? customName : "Mätare " + (index + 1));
-            wrapper.append(nameInput);
-
-            wrapper.append(document.createElement("BR"));
-
-            // -----
-
-            gaugeDataTable.addRow([sensor.id, sensor.t]);
-          });
-
-          const chartOptions = {
-            title: "Temperatüren",
-            curveType: "function",
-            legend: { position: "bottom" },
-            focusTarget: "category",
-            hAxis: { format: "yyyy-MM-dd HH:mm:ss" },
-            chartArea: { left: 40, top: 20, width: "95%", height: "75%" },
-            backgroundColor: "transparent"
-          };
-
-          const initSettings = getGuiSettings();
-
-          firstTemps.forEach(obj => {
-            const rowArray = [new Date(obj.time), initSettings.minTemp, initSettings.maxTemp];
-            obj.temps.forEach(tempObj => rowArray.push(tempObj.t));
-            chartDataTable.addRow(rowArray);
-          });
-
-          setInterval(function() {
-            const settings = getGuiSettings();
-            const minTemp = settings.minTemp;
-            const maxTemp = settings.maxTemp;
-
-            fetchTemps(jsonTemp => {
-              const timestamp = new Date();
-
-              const rowArray = [timestamp, minTemp, maxTemp];
-              jsonTemp.forEach(tempObj => rowArray.push(tempObj.t));
-              chartDataTable.addRow(rowArray);
-
-              for (var i = 0; i < jsonTemp.length; i++) {
-                const customName = document.getElementById(jsonTemp[i].id + "_name").value;
-                chartDataTable.setColumnLabel(i + 3, customName);
-
-                const currentTemp = jsonTemp[i].t;
-                if (currentTemp < minTemp || currentTemp > maxTemp) {
-                  beep();
-                }
-
-                gaugeDataTable.setValue(i, 0, customName);
-                gaugeDataTable.setValue(i, 1, currentTemp);
-              }
-
-              lineChart.draw(chartDataTable, chartOptions);
-              gaugeOptions = {
-                ...gaugeOptions,
-                yellowTo: minTemp,
-                greenFrom: minTemp,
-                greenTo: maxTemp,
-                redFrom: maxTemp
-              };
-              gaugeChart.draw(gaugeDataTable, gaugeOptions);
-            });
-          }, refreshInterval);
-        });
-      }
-
-      function init(callback) {
-        fetch("/init")
-          .then(response => response.json())
-          .then(json => callback(json));
-      }
-
-      function fetchTemps(callback) {
-        fetch("/temps")
-          .then(response => response.json())
-          .then(json => callback(json));
-      }
-
-      function fetchSettings(callback) {
-        fetch("/getSettings")
-          .then(response => response.json())
-          .then(json => callback(json));
-      }
-
-      function saveSettings(settings) {
-        const other_params = {
-          headers: { "content-type": "application/json; charset=UTF-8" },
-          body: JSON.stringify(settings),
-          method: "POST",
-          mode: "cors"
-        };
-        fetch("/saveSettings", other_params);
-      }
-
-      function beep() {
-        var sound = document.getElementById("sound1");
-        sound.play();
-      }
-    </script>
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
+    />
+    <script
+      type="text/javascript"
+      src="https://www.gstatic.com/charts/loader.js"
+    ></script>
     <style>
       body {
         font-family: "Roboto", sans-serif;
@@ -222,29 +30,51 @@
   <body class="blue-grey lighten-5">
     <nav class="light-blue lighten-1" role="navigation">
       <div class="nav-wrapper container">
-        <a id="logo-container" href="#" class="brand-logo" data-unsp-sanitized="clean">
+        <a
+          id="logo-container"
+          href="#"
+          class="brand-logo"
+          data-unsp-sanitized="clean"
+        >
           <img height="60px" src="vörtgården_inv.png" />
         </a>
       </div>
     </nav>
     <div class="container">
-      <div id="gauge_chart" style="width: 237px; height: 120px; margin:0 auto;"></div>
+      <div
+        id="gauge_chart"
+        style="width: 237px; height: 120px; margin:0 auto;"
+      ></div>
       <div id="curve_chart" style="width: 100%; height: 500px"></div>
       <div>
-        <a id="download_btn" class="waves-effect waves-light btn-small"><i class="material-icons left">image</i>Download chart image</a>
+        <a id="download_btn" class="waves-effect waves-light btn-small"
+          ><i class="material-icons left">image</i>Download chart image</a
+        >
       </div>
       <div id="img_div"></div>
       <div class="section">
         <ul class="collection with-header">
           <li class="collection-header"><h4>Settings</h4></li>
-          <li class="collection-item"><span>Maxtemp: </span><input id="maxTemp" type="text" value="68" /></li>
-          <li class="collection-item"><span>Mintemp: </span><input id="minTemp" type="text" value="64" /></li>
+          <li class="collection-item">
+            <span>Maxtemp: </span><input id="maxTemp" type="text" value="68" />
+          </li>
+          <li class="collection-item">
+            <span>Mintemp: </span><input id="minTemp" type="text" value="64" />
+          </li>
           <li class="collection-header"><h5>Sensor names</h5></li>
           <li class="collection-item"><div id="sensor_names"></div></li>
           <li class="collection-header"><h5>Pushbullet</h5></li>
-          <li class="collection-item"><span>Pushbullet Access Token: </span><input id="pushBulletToken" type="text" /></li>
+          <li class="collection-item">
+            <span>Pushbullet Access Token: </span
+            ><input id="pushBulletToken" type="text" />
+          </li>
           <li class="collection-header">
-            <span>Created at <a href="https://www.pushbullet.com/#settings" target="_blank">https://www.pushbullet.com/#settings</a></span>
+            <span
+              >Created at
+              <a href="https://www.pushbullet.com/#settings" target="_blank"
+                >https://www.pushbullet.com/#settings</a
+              ></span
+            >
           </li>
           <li class="collection-item">
             <label>
@@ -253,21 +83,30 @@
             </label>
           </li>
           <li class="collection-header"><h5>Brewfather</h5></li>
-          <li class="collection-item"><span>Brewfather custom stream URL: </span><input id="brewfatherUrl" type="text" /></li>
+          <li class="collection-item">
+            <span>Brewfather custom stream URL: </span
+            ><input id="brewfatherUrl" type="text" />
+          </li>
           <li class="collection-header">
             <span
               >Created at
-              <a href="https://web.brewfather.app/#/tabs/settings/settings" target="_blank">https://web.brewfather.app/#/tabs/settings/settings</a></span
+              <a
+                href="https://web.brewfather.app/#/tabs/settings/settings"
+                target="_blank"
+                >https://web.brewfather.app/#/tabs/settings/settings</a
+              ></span
             >
           </li>
           <li class="collection-item">
             <label>
-              <input id="brewfatherEnabled" type="checkbox" />
+              <input id="bfEnabled" type="checkbox" />
               <span>Enable brewfather logging</span>
             </label>
           </li>
         </ul>
-        <a id="save_btn" class="waves-effect waves-light btn-small"><i class="material-icons left">save</i>Save settings</a>
+        <a id="save_btn" class="waves-effect waves-light btn-small"
+          ><i class="material-icons left">save</i>Save settings</a
+        >
       </div>
       <div class="section">
         <div class="row">
@@ -277,7 +116,9 @@
             </audio>
           </div>
           <div class="col l6 s12">
-            <a class="waves-effect waves-light btn-small red" id="clear_btn"><i class="material-icons left">clear_all</i>Clear all history</a>
+            <a class="waves-effect waves-light btn-small red" id="clear_btn"
+              ><i class="material-icons left">clear_all</i>Clear all history</a
+            >
           </div>
         </div>
       </div>
@@ -298,5 +139,10 @@
       </div>
     </footer>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script type="text/javascript" src="index.js"></script>
+    <script type="text/javascript">
+      google.charts.load("current", { packages: ["corechart", "gauge"] });
+      google.charts.setOnLoadCallback(drawChart);
+    </script>
   </body>
 </html>
