@@ -26,6 +26,31 @@ function saveSettings(settings) {
   fetch("/saveSettings", other_params);
 }
 
+function updateApp() {
+  const other_params = {
+    headers: { "content-type": "application/json; charset=UTF-8" },
+    method: "POST",
+    mode: "cors"
+  };
+  fetch("/update", other_params);
+}
+function rebootDevice() {
+  const other_params = {
+    headers: { "content-type": "application/json; charset=UTF-8" },
+    method: "POST",
+    mode: "cors"
+  };
+  fetch("/reboot", other_params);
+}
+function shutdownDevice() {
+  const other_params = {
+    headers: { "content-type": "application/json; charset=UTF-8" },
+    method: "POST",
+    mode: "cors"
+  };
+  fetch("/shutdown", other_params);
+}
+
 const refreshInterval = 6000;
 
 function setGuiSettings(settings) {
@@ -78,6 +103,15 @@ fetchSettings(settings => setGuiSettings(settings));
 document
   .getElementById("save_btn")
   .addEventListener("click", () => saveSettings(getGuiSettings()));
+document
+  .getElementById("update_btn")
+  .addEventListener("click", () => updateApp());
+document
+  .getElementById("reboot_btn")
+  .addEventListener("click", () => rebootDevice());
+document
+  .getElementById("shutdown_btn")
+  .addEventListener("click", () => shutdownDevice());
 
 const customNameInputs = [];
 const customNames = [];

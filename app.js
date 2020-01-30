@@ -3,12 +3,28 @@ const jsonfile = require("jsonfile");
 const bonjour = require("bonjour")();
 const PushBullet = require("pushbullet");
 const request = require("request");
+const git = require("simple-git")();
 
 const config = require("./config/config.js"), // import config variables
   port = config.port, // set the port
   express = require("express"), // use express as the framwork
   app = express(), // create the server using express
   path = require("path"); // utility module
+
+const exec = require("child_process").exec;
+
+// Create shutdown function
+function shutdown(callback) {
+  exec("shutdown now", function(error, stdout, stderr) {
+    callback(stdout);
+  });
+}
+
+function reboot(callback) {
+  exec("shutdown -r now", function(error, stdout, stderr) {
+    callback(stdout);
+  });
+}
 
 app.use(express.static(path.join(__dirname, "public"))); // this middleware serves static files, such as .js, .img, .css files
 app.use(express.json());
@@ -199,4 +215,31 @@ app.post("/saveSettings", function(req, res) {
   res.end();
 });
 
-// TODO and notify (via email/nodemailer?) when outside settings limits
+app.post("/shutdown", function(req, res) {
+  console.log("Shutting down");
+  shutdown(function(output) {
+    console.log(output);
+    res.status(200);
+    res.end();
+  });
+});
+
+app.post("/reboot", function(req, res) {
+  console.log("Rebooting");
+  reboot(function(output) {
+    console.log(output);
+    res.status(200);
+    res.end();
+  });
+});
+
+app.post("/update", function(req, res) {
+  console.log("Running GIT PULL");
+  git.pull((err, update) => {
+    if (update && update.summary.changes) {
+      require("child_process").exec("npm restart");
+    }
+  });
+  res.status(200);
+  res.end();
+});

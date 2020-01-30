@@ -13,6 +13,7 @@
     "express": "^4.17.1",
     "jsonfile": "^5.0.0",
     "pushbullet": "^2.4.0",
-    "request": "^2.88.0"
+    "request": "^2.88.0",
+    "simple-git": "^1.131.0"
   }
 }
