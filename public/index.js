@@ -67,8 +67,7 @@ function setGuiSettings(settings) {
     settings.customNames.forEach(name => customNames.push(name));
   }
   if (settings.brewfatherStreamUrl) {
-    document.getElementById("brewfatherUrl").value =
-      settings.brewfatherStreamUrl;
+    document.getElementById("brewfatherUrl").value = settings.brewfatherStreamUrl;
   }
   document.getElementById("bfEnabled").checked = settings.logToBrewfather;
   document.getElementById("notificationsEnabled").checked = settings.notify;
@@ -100,18 +99,10 @@ function getGuiSettings() {
 
 fetchSettings(settings => setGuiSettings(settings));
 
-document
-  .getElementById("save_btn")
-  .addEventListener("click", () => saveSettings(getGuiSettings()));
-document
-  .getElementById("update_btn")
-  .addEventListener("click", () => updateApp());
-document
-  .getElementById("reboot_btn")
-  .addEventListener("click", () => rebootDevice());
-document
-  .getElementById("shutdown_btn")
-  .addEventListener("click", () => shutdownDevice());
+document.getElementById("save_btn").addEventListener("click", () => saveSettings(getGuiSettings()));
+document.getElementById("update_btn").addEventListener("click", () => updateApp());
+document.getElementById("reboot_btn").addEventListener("click", () => rebootDevice());
+document.getElementById("shutdown_btn").addEventListener("click", () => shutdownDevice());
 
 const customNameInputs = [];
 const customNames = [];
@@ -143,23 +134,18 @@ function drawChart() {
 }
 
 function start(firstTemps) {
-  const lineChart = new google.visualization.LineChart(
-    document.getElementById("curve_chart")
-  );
+  const lineChart = new google.visualization.LineChart(document.getElementById("curve_chart"));
   const chartDataTable = new google.visualization.DataTable();
 
-  document
-    .getElementById("download_btn")
-    .addEventListener("click", () => downloadChart(lineChart));
+  document.getElementById("download_btn").addEventListener("click", () => downloadChart(lineChart));
   document.getElementById("clear_btn").addEventListener("click", () => {
     fetch("/clear").then(response => {
       chartDataTable.removeRows(0, chartDataTable.getNumberOfRows());
+      document.getElementById("curve_chart").scrollIntoView();
     });
   });
 
-  const gaugeChart = new google.visualization.Gauge(
-    document.getElementById("gauge_chart")
-  );
+  const gaugeChart = new google.visualization.Gauge(document.getElementById("gauge_chart"));
 
   chartDataTable.addColumn("datetime", "Tid");
   chartDataTable.addColumn("number", "Min");
@@ -183,10 +169,7 @@ function start(firstTemps) {
     nameInput.setAttribute("type", "text");
     const index = customNameInputs.indexOf(nameInput);
     const customName = customNames[index];
-    nameInput.setAttribute(
-      "value",
-      customName ? customName : "Mätare " + (index + 1)
-    );
+    nameInput.setAttribute("value", customName ? customName : "Mätare " + (index + 1));
     sensorNamesWrapper.append(nameInput);
 
     sensorNamesWrapper.append(document.createElement("BR"));
@@ -199,10 +182,7 @@ function start(firstTemps) {
   toRowArrays(firstTemps).forEach(rowArray => chartDataTable.addRow(rowArray));
 
   refresh(gaugeChart, lineChart, chartDataTable, gaugeDataTable);
-  setInterval(
-    () => refresh(gaugeChart, lineChart, chartDataTable, gaugeDataTable),
-    refreshInterval
-  );
+  setInterval(() => refresh(gaugeChart, lineChart, chartDataTable, gaugeDataTable), refreshInterval);
 }
 
 function toRowArrays(firstTemps) {
@@ -222,8 +202,7 @@ function refresh(gaugeChart, lineChart, chartDataTable, gaugeDataTable) {
 
     for (var i = 0; i < jsonTemp.temps.length; i++) {
       //Update column label names (could have changed)
-      const customName = document.getElementById(jsonTemp.temps[i].id + "_name")
-        .value;
+      const customName = document.getElementById(jsonTemp.temps[i].id + "_name").value;
       chartDataTable.setColumnLabel(i + 3, customName);
 
       //Beep

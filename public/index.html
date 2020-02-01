@@ -2,22 +2,11 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <link
-      href="https://fonts.googleapis.com/css?family=Roboto&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://fonts.googleapis.com/icon?family=Material+Icons"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
-    />
-    <script
-      type="text/javascript"
-      src="https://www.gstatic.com/charts/loader.js"
-    ></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css" />
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
     <style>
       body {
         font-family: "Roboto", sans-serif;
@@ -25,56 +14,58 @@
       td + td + td {
         display: none;
       }
+      .countdown {
+        height: 5px;
+        animation-name: countdown-anim;
+        animation-duration: 6s;
+        animation-iteration-count: infinite;
+        animation-timing-function: linear;
+        margin: 5px auto;
+        border-radius: 2.5px;
+      }
+
+      @keyframes countdown-anim {
+        from {
+          width: 100%;
+          opacity: 0;
+        }
+        to {
+          width: 0%;
+          opacity: 1;
+        }
+      }
     </style>
   </head>
   <body class="blue-grey lighten-5">
     <nav class="light-blue lighten-1" role="navigation">
       <div class="nav-wrapper container">
-        <a
-          id="logo-container"
-          href="#"
-          class="brand-logo"
-          data-unsp-sanitized="clean"
-        >
+        <a id="logo-container" href="#" class="brand-logo" data-unsp-sanitized="clean">
           <img height="60px" src="vörtgården_inv.png" />
         </a>
       </div>
     </nav>
     <div class="container">
-      <div
-        id="gauge_chart"
-        style="width: 237px; height: 120px; margin:0 auto;"
-      ></div>
+      <div id="gauge_chart" style="width: 237px; height: 120px; margin:0 auto;"></div>
+      <div class="countdown blue-grey lighten-2"></div>
       <div id="curve_chart" style="width: 100%; height: 500px"></div>
       <div>
-        <a id="download_btn" class="waves-effect waves-light btn-small"
-          ><i class="material-icons left">image</i>Download chart image</a
-        >
+        <a id="download_btn" class="waves-effect waves-light btn-small">
+          <i class="material-icons left">image</i>
+          Download chart image
+        </a>
       </div>
       <div id="img_div"></div>
       <div class="section">
         <ul class="collection with-header">
           <li class="collection-header"><h4>Settings</h4></li>
-          <li class="collection-item">
-            <span>Maxtemp: </span><input id="maxTemp" type="text" value="68" />
-          </li>
-          <li class="collection-item">
-            <span>Mintemp: </span><input id="minTemp" type="text" value="64" />
-          </li>
+          <li class="collection-item"><span>Maxtemp: </span><input id="maxTemp" type="text" value="68" /></li>
+          <li class="collection-item"><span>Mintemp: </span><input id="minTemp" type="text" value="64" /></li>
           <li class="collection-header"><h5>Sensor names</h5></li>
           <li class="collection-item"><div id="sensor_names"></div></li>
           <li class="collection-header"><h5>Pushbullet</h5></li>
-          <li class="collection-item">
-            <span>Pushbullet Access Token: </span
-            ><input id="pushBulletToken" type="text" />
-          </li>
+          <li class="collection-item"><span>Pushbullet Access Token: </span><input id="pushBulletToken" type="text" /></li>
           <li class="collection-header">
-            <span
-              >Created at
-              <a href="https://www.pushbullet.com/#settings" target="_blank"
-                >https://www.pushbullet.com/#settings</a
-              ></span
-            >
+            <span>Created at <a href="https://www.pushbullet.com/#settings" target="_blank">https://www.pushbullet.com/#settings</a></span>
           </li>
           <li class="collection-item">
             <label>
@@ -83,18 +74,11 @@
             </label>
           </li>
           <li class="collection-header"><h5>Brewfather</h5></li>
-          <li class="collection-item">
-            <span>Brewfather custom stream URL: </span
-            ><input id="brewfatherUrl" type="text" />
-          </li>
+          <li class="collection-item"><span>Brewfather custom stream URL: </span><input id="brewfatherUrl" type="text" /></li>
           <li class="collection-header">
             <span
               >Created at
-              <a
-                href="https://web.brewfather.app/#/tabs/settings/settings"
-                target="_blank"
-                >https://web.brewfather.app/#/tabs/settings/settings</a
-              ></span
+              <a href="https://web.brewfather.app/#/tabs/settings/settings" target="_blank">https://web.brewfather.app/#/tabs/settings/settings</a></span
             >
           </li>
           <li class="collection-item">
@@ -104,9 +88,10 @@
             </label>
           </li>
         </ul>
-        <a id="save_btn" class="waves-effect waves-light btn-small"
-          ><i class="material-icons left">save</i>Save settings</a
-        >
+        <a id="save_btn" class="btn waves-effect waves-light">
+          <i class="material-icons left">save</i>
+          Save settings
+        </a>
       </div>
       <div class="section">
         <div class="row">
@@ -121,22 +106,22 @@
         <ul class="collection with-header">
           <li class="collection-header"><h4>Controls</h4></li>
           <li class="collection-item">
-            <a class="waves-effect waves-light btn-small" id="update_btn">
+            <a class="btn waves-effect waves-light" id="update_btn">
               <i class="material-icons left">system_update_alt</i>
               Update (git pull)
             </a>
-            <a class="waves-effect waves-light btn-small red" id="clear_btn">
+            <a class="btn waves-effect waves-light red" id="clear_btn">
               <i class="material-icons left">clear_all</i>
               Clear all history
             </a>
           </li>
           <li class="collection-header"><h5>Power</h5></li>
           <li class="collection-item">
-            <a class="waves-effect waves-light btn-small red" id="reboot_btn">
+            <a class="btn waves-effect waves-light red" id="reboot_btn">
               <i class="material-icons left">power_settings_new</i>
               Reboot
             </a>
-            <a class="waves-effect waves-light btn-small red" id="shutdown_btn">
+            <a class="btn waves-effect waves-light red" id="shutdown_btn">
               <i class="material-icons left">power_off</i>
               Shut down
             </a>
@@ -159,7 +144,8 @@
         </div>
       </div>
     </footer>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
     <script type="text/javascript" src="index.js"></script>
     <script type="text/javascript">
       google.charts.load("current", { packages: ["corechart", "gauge"] });
