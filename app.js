@@ -4,6 +4,7 @@ const bonjour = require("bonjour")();
 const PushBullet = require("pushbullet");
 const request = require("request");
 const git = require("simple-git")();
+const exec = require("child_process").exec;
 
 const config = require("./config/config.js"), // import config variables
   port = config.port, // set the port
@@ -11,15 +12,19 @@ const config = require("./config/config.js"), // import config variables
   app = express(), // create the server using express
   path = require("path"); // utility module
 
-const exec = require("child_process").exec;
-
 // Create shutdown function
 function shutdown(callback) {
-  exec("shutdown now", (error, stdout, stderr) => callback(stdout));
+  exec("shutdown now", (error, stdout, stderr) => {
+    if (error) console.error(error);
+    callback(stdout);
+  });
 }
 
 function reboot(callback) {
-  exec("shutdown -r now", (error, stdout, stderr) => callback(stdout));
+  exec("shutdown -r now", (error, stdout, stderr) => {
+    if (error) console.error(error);
+    callback(stdout);
+  });
 }
 
 app.use(express.static(path.join(__dirname, "public"))); // this middleware serves static files, such as .js, .img, .css files
@@ -46,20 +51,19 @@ var dataFileArray = [];
 jsonfile.readFile(dataFile, (err, obj) => {
   if (err) {
     dataFileArray.push({ time: new Date().getTime(), temps: getTemps() });
-    saveDataFile();
   } else {
-    dataFileArray = dataFileArray.concat(jsonfile.readFileSync(dataFile));
+    dataFileArray = obj.concat(dataFileArray);
   }
+  saveDataFile();
 });
 /**
  * Read the settings file if it exists
  */
 const settingsFile = "../settings.json";
-var settings = { minTemp: 62, maxTemp: 67 };
+var settings = { minTemp: 62, maxTemp: 67, logInterval: config.standardLogInterval };
 jsonfile.readFile(settingsFile, function(err, obj) {
   if (err) {
-    dataFileArray.push({ time: new Date().getTime(), temps: getTemps() });
-    saveDataFile();
+    console.error(err);
   } else {
     settings = obj;
   }
@@ -68,6 +72,7 @@ jsonfile.readFile(settingsFile, function(err, obj) {
 function getTemps() {
   const temps = sensor.readAllC();
   if (temps.length == 0) {
+    //Mock values
     temps.push({ id: "foo1", t: 40 + new Date().getSeconds() });
     temps.push({ id: "foo2", t: 90 - new Date().getSeconds() });
   }
@@ -82,7 +87,9 @@ function lastReading() {
  * The loop reading and storing the temperature values to the file / array
  */
 var notificationSent = false;
-setInterval(() => readTempAndCheck(), config.logInterval);
+var logInterval = settings.logInterval;
+var logVar = setInterval(() => readTempAndCheck(), settings.logInterval);
+console.log("Starting logging with interval " + logInterval);
 function readTempAndCheck() {
   const temps = getTemps();
   dataFileArray.push({ time: new Date().getTime(), temps: temps });
@@ -108,6 +115,12 @@ function readTempAndCheck() {
       });
     }
     notificationSent = outsideRange;
+  }
+  if (settings.logInterval != logInterval) {
+    logInterval = settings.logInterval;
+    clearInterval(logVar);
+    console.log("Restarting logging with interval " + logInterval);
+    logVar = setInterval(() => readTempAndCheck(), settings.logInterval);
   }
 }
 
@@ -186,7 +199,7 @@ app.post("/saveSettings", (req, res) => {
 });
 app.post("/shutdown", (req, res) => {
   console.log("Shutting down");
-  shutdown(function(output) {
+  shutdown(output => {
     console.log(output);
     res.status(200);
     res.end();
@@ -194,7 +207,7 @@ app.post("/shutdown", (req, res) => {
 });
 app.post("/reboot", (req, res) => {
   console.log("Rebooting");
-  reboot(function(output) {
+  reboot(output => {
     console.log(output);
     res.status(200);
     res.end();

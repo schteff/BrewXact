@@ -24,6 +24,10 @@
         border-radius: 2.5px;
       }
 
+      .noMarginBottom {
+        margin-bottom: 0;
+      }
+
       @keyframes countdown-anim {
         from {
           width: 100%;
@@ -48,50 +52,112 @@
       <div id="gauge_chart" style="width: 237px; height: 120px; margin:0 auto;"></div>
       <div class="countdown blue-grey lighten-2"></div>
       <div id="curve_chart" style="width: 100%; height: 500px"></div>
-      <div>
-        <a id="download_btn" class="waves-effect waves-light btn-small">
+      <div class="section">
+        <a id="download_chart_btn" class="waves-effect waves-light btn-flat">
           <i class="material-icons left">image</i>
           Download chart image
+        </a>
+        <a id="download_data_btn" class="waves-effect waves-light btn-flat">
+          <i class="material-icons left">file_download</i>
+          Download data
         </a>
       </div>
       <div id="img_div"></div>
       <div class="section">
         <ul class="collection with-header">
-          <li class="collection-header"><h4>Settings</h4></li>
-          <li class="collection-item"><span>Maxtemp: </span><input id="maxTemp" type="text" value="68" /></li>
-          <li class="collection-item"><span>Mintemp: </span><input id="minTemp" type="text" value="64" /></li>
-          <li class="collection-header"><h5>Sensor names</h5></li>
+          <li class="collection-header row valign-wrapper noMarginBottom">
+            <h4 class="col s8">Settings</h4>
+            <div class="col s4 right-align">
+              <a id="save_btn" class="btn waves-effect waves-light">
+                <i class="material-icons left">save</i>
+                Save settings
+              </a>
+            </div>
+          </li>
+          <li class="collection-item row noMarginBottom">
+            <div class="input-field col s4">
+              <input placeholder="°C" id="maxTemp" type="number" class="validate" />
+              <label for="maxTemp">Max temp (°C)</label>
+            </div>
+            <div class="input-field col s4">
+              <input placeholder="°C" id="minTemp" type="number" class="validate" />
+              <label for="minTemp">Min temp (°C)</label>
+            </div>
+            <div class="input-field col s4">
+              <input placeholder="seconds" id="logInterval" type="number" class="validate" />
+              <label for="logInterval">Log interval (seconds)</label>
+            </div>
+          </li>
+          <li class="collection-header"><h5>Custom sensor names</h5></li>
           <li class="collection-item"><div id="sensor_names"></div></li>
-          <li class="collection-header"><h5>Pushbullet</h5></li>
-          <li class="collection-item"><span>Pushbullet Access Token: </span><input id="pushBulletToken" type="text" /></li>
-          <li class="collection-header">
+          <li class="collection-header row valign-wrapper noMarginBottom">
+            <h5 class="col s6">Pushbullet</h5>
+            <div class="switch col s6 right-align">
+              <label>
+                <input id="notificationsEnabled" type="checkbox" />
+                <span class="lever"></span>
+                <span>Enable pushbullet notifications</span>
+              </label>
+            </div>
+          </li>
+          <li id="pushbullet_wrapper" class="collection-item">
+            <div class="input-field">
+              <input placeholder="xXxxX" id="pushBulletToken" type="text" />
+              <label for="pushBulletToken">Pushbullet Access Token</label>
+            </div>
             <span>Created at <a href="https://www.pushbullet.com/#settings" target="_blank">https://www.pushbullet.com/#settings</a></span>
           </li>
-          <li class="collection-item">
-            <label>
-              <input id="notificationsEnabled" type="checkbox" />
-              <span>Enable pushbullet notifications</span>
-            </label>
+          <li class="collection-header row valign-wrapper noMarginBottom">
+            <h5 class="col s6">Brewfather</h5>
+            <div class="switch col s6 right-align">
+              <label>
+                <input id="bfEnabled" type="checkbox" />
+                <span class="lever"></span>
+                <span>Enable brewfather logging</span>
+              </label>
+            </div>
           </li>
-          <li class="collection-header"><h5>Brewfather</h5></li>
-          <li class="collection-item"><span>Brewfather custom stream URL: </span><input id="brewfatherUrl" type="text" /></li>
-          <li class="collection-header">
-            <span
-              >Created at
-              <a href="https://web.brewfather.app/#/tabs/settings/settings" target="_blank">https://web.brewfather.app/#/tabs/settings/settings</a></span
-            >
-          </li>
-          <li class="collection-item">
-            <label>
-              <input id="bfEnabled" type="checkbox" />
-              <span>Enable brewfather logging</span>
-            </label>
+          <li id="brewfather_wrapper" class="collection-item">
+            <div class="input-field">
+              <input placeholder="http://..." id="brewfatherUrl" type="text" />
+              <label for="brewfatherUrl">Brewfather custom stream URL</label>
+            </div>
+            <span>
+              Created at
+              <a href="https://web.brewfather.app/#/tabs/settings/settings" target="_blank">https://web.brewfather.app/#/tabs/settings/settings</a>
+            </span>
           </li>
         </ul>
-        <a id="save_btn" class="btn waves-effect waves-light">
-          <i class="material-icons left">save</i>
-          Save settings
-        </a>
+      </div>
+      <div class="section">
+        <ul class="collection with-header">
+          <li class="collection-header row valign-wrapper noMarginBottom">
+            <h4 class="col s4">Controls</h4>
+            <div class="col s8 right-align">
+              <a class="btn waves-effect waves-light" id="update_btn">
+                <i class="material-icons left">system_update_alt</i>
+                Update (git pull)
+              </a>
+              <a class="btn waves-effect waves-light red" id="clear_btn">
+                <i class="material-icons left">clear_all</i>
+                Clear history
+              </a>
+            </div>
+          </li>
+          <li class="collection-header row valign-wrapper noMarginBottom">
+            <h5 class="col s4">Power</h5>
+            <div class="col s8 right-align">
+              <a class="btn waves-effect waves-light red" id="reboot_btn">
+                <i class="material-icons left">rotate_right</i>
+                Reboot
+              </a>
+              <a class="btn waves-effect waves-light red" id="shutdown_btn">
+                <i class="material-icons left">power_off</i>
+                Shut down
+              </a>
+            </div>
+          </li>
+        </ul>
       </div>
       <div class="section">
         <div class="row">
@@ -101,32 +167,6 @@
             </audio>
           </div>
         </div>
-      </div>
-      <div class="section">
-        <ul class="collection with-header">
-          <li class="collection-header"><h4>Controls</h4></li>
-          <li class="collection-item">
-            <a class="btn waves-effect waves-light" id="update_btn">
-              <i class="material-icons left">system_update_alt</i>
-              Update (git pull)
-            </a>
-            <a class="btn waves-effect waves-light red" id="clear_btn">
-              <i class="material-icons left">clear_all</i>
-              Clear all history
-            </a>
-          </li>
-          <li class="collection-header"><h5>Power</h5></li>
-          <li class="collection-item">
-            <a class="btn waves-effect waves-light red" id="reboot_btn">
-              <i class="material-icons left">power_settings_new</i>
-              Reboot
-            </a>
-            <a class="btn waves-effect waves-light red" id="shutdown_btn">
-              <i class="material-icons left">power_off</i>
-              Shut down
-            </a>
-          </li>
-        </ul>
       </div>
     </div>
     <footer class="page-footer">

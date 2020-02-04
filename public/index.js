@@ -60,6 +60,9 @@ function setGuiSettings(settings) {
   if (settings.maxTemp) {
     document.getElementById("maxTemp").value = settings.maxTemp;
   }
+  if (settings.logInterval) {
+    document.getElementById("logInterval").value = settings.logInterval / 1000;
+  }
   if (settings.pushBulletToken) {
     document.getElementById("pushBulletToken").value = settings.pushBulletToken;
   }
@@ -71,16 +74,40 @@ function setGuiSettings(settings) {
   }
   document.getElementById("bfEnabled").checked = settings.logToBrewfather;
   document.getElementById("notificationsEnabled").checked = settings.notify;
+  if (!settings.logToBrewfather) {
+    document.getElementById("brewfather_wrapper").classList.add("hide");
+  }
+  if (!settings.notificationsEnabled) {
+    document.getElementById("pushbullet_wrapper").classList.add("hide");
+  }
 }
 
 function downloadChart(chart) {
-  const img_div = document.getElementById("img_div");
-  img_div.innerHTML = '<img src="' + chart.getImageURI() + '">';
+  var a = $("<a>")
+    .attr("href", chart.getImageURI())
+    .attr("download", "chart.png")
+    .appendTo("body");
+
+  a[0].click();
+
+  a.remove();
+}
+
+function downloadData() {
+  init(data => {
+    var a = document.createElement("a");
+    var file = new Blob([JSON.stringify(data)], { type: "text/json" });
+    a.href = URL.createObjectURL(file);
+    a.download = "data.json";
+    a.click();
+    a.remove();
+  });
 }
 
 function getGuiSettings() {
   const minTemp = Number(document.getElementById("minTemp").value);
   const maxTemp = Number(document.getElementById("maxTemp").value);
+  const logInterval = Number(document.getElementById("logInterval").value) * 1000;
   const customNames = customNameInputs.map(input => input.value);
   const notify = document.getElementById("notificationsEnabled").checked;
   const pushBulletToken = document.getElementById("pushBulletToken").value;
@@ -89,6 +116,7 @@ function getGuiSettings() {
   return {
     minTemp: minTemp,
     maxTemp: maxTemp,
+    logInterval: logInterval,
     customNames: customNames,
     notify: notify,
     pushBulletToken: pushBulletToken,
@@ -103,6 +131,8 @@ document.getElementById("save_btn").addEventListener("click", () => saveSettings
 document.getElementById("update_btn").addEventListener("click", () => updateApp());
 document.getElementById("reboot_btn").addEventListener("click", () => rebootDevice());
 document.getElementById("shutdown_btn").addEventListener("click", () => shutdownDevice());
+document.getElementById("notificationsEnabled").addEventListener("change", event => document.getElementById("pushbullet_wrapper").classList.toggle("hide"));
+document.getElementById("bfEnabled").addEventListener("change", event => document.getElementById("brewfather_wrapper").classList.toggle("hide"));
 
 const customNameInputs = [];
 const customNames = [];
@@ -115,7 +145,7 @@ const chartOptions = {
   focusTarget: "category",
   hAxis: { format: "yyyy-MM-dd HH:mm:ss" },
   chartArea: { left: 40, top: 20, width: "95%", height: "75%" },
-  backgroundColor: "transparent"
+  backgroundColor: "#eceff1"
 };
 
 var gaugeOptions = {
@@ -137,7 +167,8 @@ function start(firstTemps) {
   const lineChart = new google.visualization.LineChart(document.getElementById("curve_chart"));
   const chartDataTable = new google.visualization.DataTable();
 
-  document.getElementById("download_btn").addEventListener("click", () => downloadChart(lineChart));
+  document.getElementById("download_chart_btn").addEventListener("click", () => downloadChart(lineChart));
+  document.getElementById("download_data_btn").addEventListener("click", () => downloadData(chartDataTable));
   document.getElementById("clear_btn").addEventListener("click", () => {
     fetch("/clear").then(response => {
       chartDataTable.removeRows(0, chartDataTable.getNumberOfRows());
@@ -200,6 +231,8 @@ function refresh(gaugeChart, lineChart, chartDataTable, gaugeDataTable) {
     const settings = getGuiSettings();
     chartDataTable.addRow(toRowArray(jsonTemp, settings));
 
+    chartDataTable.setColumnLabel(1, "Min " + settings.minTemp + "°C");
+    chartDataTable.setColumnLabel(2, "Max " + settings.maxTemp + "°C");
     for (var i = 0; i < jsonTemp.temps.length; i++) {
       //Update column label names (could have changed)
       const customName = document.getElementById(jsonTemp.temps[i].id + "_name").value;
