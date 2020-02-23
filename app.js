@@ -217,9 +217,16 @@ app.post("/update", (req, res) => {
   console.log("Running GIT PULL");
   git.pull((err, update) => {
     if (update && update.summary.changes) {
+      console.log(update)
+      res.send("updating");
       require("child_process").exec("npm restart");
+    }else if(err){
+      console.error(err)
+      res.status(500);
+      res.end();
+    }else{
+      console.log(update)
+      res.send("noupdate");
     }
   });
-  res.status(200);
-  res.end();
 });
