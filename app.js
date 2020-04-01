@@ -116,12 +116,6 @@ function readTempAndCheck() {
     }
     notificationSent = outsideRange;
   }
-  if (settings.logInterval != logInterval) {
-    logInterval = settings.logInterval;
-    clearInterval(logVar);
-    console.log("Restarting logging with interval " + logInterval);
-    logVar = setInterval(() => readTempAndCheck(), settings.logInterval);
-  }
 }
 
 /**
@@ -190,6 +184,13 @@ app.post("/saveSettings", (req, res) => {
       //If brewfather logging was switched to on from off, send a value
       if (!oldLogToBrewfather && settings.logToBrewfather) {
         trySendLastReadingToBrewfather();
+      }
+      
+      if (settings.logInterval != logInterval) {
+        logInterval = settings.logInterval;
+        clearInterval(logVar);
+        console.log("Restarting logging with interval " + logInterval);
+        logVar = setInterval(() => readTempAndCheck(), settings.logInterval);
       }
     }
   });
