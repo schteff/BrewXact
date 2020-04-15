@@ -49,9 +49,9 @@
       </div>
     </nav>
     <div class="container">
-      <div id="gauge_chart" style="width: 237px; height: 120px; margin:0 auto;"></div>
+      <div id="gauge_chart" style="width: 237px; height: 120px; margin: 0 auto;"></div>
       <div class="countdown blue-grey lighten-2"></div>
-      <div id="curve_chart" style="width: 100%; height: 500px"></div>
+      <div id="curve_chart" style="width: 100%; height: 500px;"></div>
       <div class="section">
         <a id="download_chart_btn" class="waves-effect waves-light btn-flat">
           <i class="material-icons left">image</i>
@@ -125,6 +125,36 @@
             <span>
               Created at
               <a href="https://web.brewfather.app/#/tabs/settings/settings" target="_blank">https://web.brewfather.app/#/tabs/settings/settings</a>
+            </span>
+          </li>
+          <li class="collection-header row valign-wrapper noMarginBottom">
+            <h5 class="col s6">Ifttt webhooks</h5>
+            <div class="switch col s6 right-align">
+              <label>
+                <input id="iftttEnabled" type="checkbox" />
+                <span class="lever"></span>
+                <span>Enable ifttt webhooks</span>
+              </label>
+            </div>
+          </li>
+          <li id="ifttt_wrapper" class="collection-item">
+            <div class="collection-item row noMarginBottom">
+              <div class="input-field col s4">
+                <input placeholder="????" id="iftttWebhooksKey" type="text" />
+                <label for="iftttWebhooksKey">IFTTT Webhooks key</label>
+              </div>
+              <div class="input-field col s4">
+                <input placeholder="brewxact_low_temp" id="iftttLowTempEventName" type="text" value="brewxact_low_temp" />
+                <label for="iftttLowTempEventName">IFTTT Webhooks low temp event name</label>
+              </div>
+              <div class="input-field col s4">
+                <input placeholder="brewxact_high_temp" id="iftttHighTempEventName" type="text" value="brewxact_high_temp" />
+                <label for="iftttHighTempEventName">IFTTT Webhooks high temp event name</label>
+              </div>
+            </div>
+            <span>
+              Created at
+              <a href="https://ifttt.com/maker_webhooks" target="_blank">https://ifttt.com/maker_webhooks</a>
             </span>
           </li>
         </ul>

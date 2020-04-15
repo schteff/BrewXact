@@ -1,19 +1,19 @@
 function init(callback) {
   fetch("/init")
-    .then(response => response.json())
-    .then(json => callback(json));
+    .then((response) => response.json())
+    .then((json) => callback(json));
 }
 
 function fetchTemps(callback) {
   fetch("/temps")
-    .then(response => response.json())
-    .then(json => callback(json));
+    .then((response) => response.json())
+    .then((json) => callback(json));
 }
 
 function fetchSettings(callback) {
   fetch("/getSettings")
-    .then(response => response.json())
-    .then(json => callback(json));
+    .then((response) => response.json())
+    .then((json) => callback(json));
 }
 
 function saveSettings(settings) {
@@ -21,7 +21,7 @@ function saveSettings(settings) {
     headers: { "content-type": "application/json; charset=UTF-8" },
     body: JSON.stringify(settings),
     method: "POST",
-    mode: "cors"
+    mode: "cors",
   };
   fetch("/saveSettings", other_params);
 }
@@ -30,7 +30,7 @@ function updateApp() {
   const other_params = {
     headers: { "content-type": "application/json; charset=UTF-8" },
     method: "POST",
-    mode: "cors"
+    mode: "cors",
   };
   fetch("/update", other_params);
 }
@@ -38,7 +38,7 @@ function rebootDevice() {
   const other_params = {
     headers: { "content-type": "application/json; charset=UTF-8" },
     method: "POST",
-    mode: "cors"
+    mode: "cors",
   };
   fetch("/reboot", other_params);
 }
@@ -46,7 +46,7 @@ function shutdownDevice() {
   const other_params = {
     headers: { "content-type": "application/json; charset=UTF-8" },
     method: "POST",
-    mode: "cors"
+    mode: "cors",
   };
   fetch("/shutdown", other_params);
 }
@@ -67,26 +67,36 @@ function setGuiSettings(settings) {
     document.getElementById("pushBulletToken").value = settings.pushBulletToken;
   }
   if (settings.customNames) {
-    settings.customNames.forEach(name => customNames.push(name));
+    settings.customNames.forEach((name) => customNames.push(name));
   }
   if (settings.brewfatherStreamUrl) {
     document.getElementById("brewfatherUrl").value = settings.brewfatherStreamUrl;
   }
   document.getElementById("bfEnabled").checked = settings.logToBrewfather;
-  document.getElementById("notificationsEnabled").checked = settings.notify;
   if (!settings.logToBrewfather) {
     document.getElementById("brewfather_wrapper").classList.add("hide");
   }
-  if (!settings.notificationsEnabled) {
+  document.getElementById("notificationsEnabled").checked = settings.notify;
+  if (!settings.notify) {
     document.getElementById("pushbullet_wrapper").classList.add("hide");
+  }
+  document.getElementById("iftttEnabled").checked = settings.iftttEnabled;
+  if (!settings.iftttEnabled) {
+    document.getElementById("ifttt_wrapper").classList.add("hide");
+  }
+  if (settings.iftttWebhooksKey) {
+    document.getElementById("iftttWebhooksKey").value = settings.iftttWebhooksKey;
+  }
+  if (settings.iftttLowTempEventName) {
+    document.getElementById("iftttLowTempEventName").value = settings.iftttLowTempEventName;
+  }
+  if (settings.iftttHighTempEventName) {
+    document.getElementById("iftttHighTempEventName").value = settings.iftttHighTempEventName;
   }
 }
 
 function downloadChart(chart) {
-  var a = $("<a>")
-    .attr("href", chart.getImageURI())
-    .attr("download", "chart.png")
-    .appendTo("body");
+  var a = $("<a>").attr("href", chart.getImageURI()).attr("download", "chart.png").appendTo("body");
 
   a[0].click();
 
@@ -94,7 +104,7 @@ function downloadChart(chart) {
 }
 
 function downloadData() {
-  init(data => {
+  init((data) => {
     var a = document.createElement("a");
     var file = new Blob([JSON.stringify(data)], { type: "text/json" });
     a.href = URL.createObjectURL(file);
@@ -108,11 +118,16 @@ function getGuiSettings() {
   const minTemp = Number(document.getElementById("minTemp").value);
   const maxTemp = Number(document.getElementById("maxTemp").value);
   const logInterval = Number(document.getElementById("logInterval").value) * 1000;
-  const customNames = customNameInputs.map(input => input.value);
+  const customNames = customNameInputs.map((input) => input.value);
   const notify = document.getElementById("notificationsEnabled").checked;
   const pushBulletToken = document.getElementById("pushBulletToken").value;
   const brewfatherStreamUrl = document.getElementById("brewfatherUrl").value;
   const logToBrewfather = document.getElementById("bfEnabled").checked;
+  const iftttEnabled = document.getElementById("iftttEnabled").checked;
+  const iftttWebhooksKey = document.getElementById("iftttWebhooksKey").value;
+  const iftttLowTempEventName = document.getElementById("iftttLowTempEventName").value;
+  const iftttHighTempEventName = document.getElementById("iftttHighTempEventName").value;
+
   return {
     minTemp: minTemp,
     maxTemp: maxTemp,
@@ -121,18 +136,23 @@ function getGuiSettings() {
     notify: notify,
     pushBulletToken: pushBulletToken,
     brewfatherStreamUrl: brewfatherStreamUrl,
-    logToBrewfather: logToBrewfather
+    logToBrewfather: logToBrewfather,
+    iftttEnabled: iftttEnabled,
+    iftttWebhooksKey: iftttWebhooksKey,
+    iftttLowTempEventName: iftttLowTempEventName,
+    iftttHighTempEventName: iftttHighTempEventName,
   };
 }
 
-fetchSettings(settings => setGuiSettings(settings));
+fetchSettings((settings) => setGuiSettings(settings));
 
 document.getElementById("save_btn").addEventListener("click", () => saveSettings(getGuiSettings()));
 document.getElementById("update_btn").addEventListener("click", () => updateApp());
 document.getElementById("reboot_btn").addEventListener("click", () => rebootDevice());
 document.getElementById("shutdown_btn").addEventListener("click", () => shutdownDevice());
-document.getElementById("notificationsEnabled").addEventListener("change", event => document.getElementById("pushbullet_wrapper").classList.toggle("hide"));
-document.getElementById("bfEnabled").addEventListener("change", event => document.getElementById("brewfather_wrapper").classList.toggle("hide"));
+document.getElementById("notificationsEnabled").addEventListener("change", (event) => document.getElementById("pushbullet_wrapper").classList.toggle("hide"));
+document.getElementById("bfEnabled").addEventListener("change", (event) => document.getElementById("brewfather_wrapper").classList.toggle("hide"));
+document.getElementById("iftttEnabled").addEventListener("change", (event) => document.getElementById("ifttt_wrapper").classList.toggle("hide"));
 
 const customNameInputs = [];
 const customNames = [];
@@ -145,7 +165,7 @@ const chartOptions = {
   focusTarget: "category",
   hAxis: { format: "yyyy-MM-dd HH:mm:ss" },
   chartArea: { left: 40, top: 20, width: "95%", height: "75%" },
-  backgroundColor: "#eceff1"
+  backgroundColor: "#eceff1",
 };
 
 var gaugeOptions = {
@@ -156,11 +176,11 @@ var gaugeOptions = {
   yellowFrom: 0,
   minorTicks: 5,
   min: 20,
-  max: 100
+  max: 100,
 };
 
 function drawChart() {
-  init(firstTemps => start(firstTemps));
+  init((firstTemps) => start(firstTemps));
 }
 
 function start(firstTemps) {
@@ -170,7 +190,7 @@ function start(firstTemps) {
   document.getElementById("download_chart_btn").addEventListener("click", () => downloadChart(lineChart));
   document.getElementById("download_data_btn").addEventListener("click", () => downloadData(chartDataTable));
   document.getElementById("clear_btn").addEventListener("click", () => {
-    fetch("/clear").then(response => {
+    fetch("/clear").then((response) => {
       chartDataTable.removeRows(0, chartDataTable.getNumberOfRows());
       document.getElementById("curve_chart").scrollIntoView();
     });
@@ -186,7 +206,7 @@ function start(firstTemps) {
   gaugeDataTable.addColumn("string", "Label");
   gaugeDataTable.addColumn("number", "Value");
 
-  firstTemps[firstTemps.length - 1].temps.forEach(sensor => {
+  firstTemps[firstTemps.length - 1].temps.forEach((sensor) => {
     chartDataTable.addColumn("number", sensor.id);
 
     // -----
@@ -210,7 +230,7 @@ function start(firstTemps) {
     gaugeDataTable.addRow([sensor.id, sensor.t]);
   });
 
-  toRowArrays(firstTemps).forEach(rowArray => chartDataTable.addRow(rowArray));
+  toRowArrays(firstTemps).forEach((rowArray) => chartDataTable.addRow(rowArray));
 
   refresh(gaugeChart, lineChart, chartDataTable, gaugeDataTable);
   setInterval(() => refresh(gaugeChart, lineChart, chartDataTable, gaugeDataTable), refreshInterval);
@@ -218,16 +238,16 @@ function start(firstTemps) {
 
 function toRowArrays(firstTemps) {
   const initSettings = getGuiSettings();
-  return firstTemps.map(obj => toRowArray(obj, initSettings));
+  return firstTemps.map((obj) => toRowArray(obj, initSettings));
 }
 function toRowArray(obj, settings) {
   const rowArray = [new Date(obj.time), settings.minTemp, settings.maxTemp];
-  obj.temps.forEach(tempObj => rowArray.push(tempObj.t));
+  obj.temps.forEach((tempObj) => rowArray.push(tempObj.t));
   return rowArray;
 }
 
 function refresh(gaugeChart, lineChart, chartDataTable, gaugeDataTable) {
-  fetchTemps(jsonTemp => {
+  fetchTemps((jsonTemp) => {
     const settings = getGuiSettings();
     chartDataTable.addRow(toRowArray(jsonTemp, settings));
 
@@ -255,7 +275,7 @@ function refresh(gaugeChart, lineChart, chartDataTable, gaugeDataTable) {
       yellowTo: settings.minTemp,
       greenFrom: settings.minTemp,
       greenTo: settings.maxTemp,
-      redFrom: settings.maxTemp
+      redFrom: settings.maxTemp,
     };
     gaugeChart.draw(gaugeDataTable, gaugeOptions);
   });

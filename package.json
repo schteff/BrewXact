@@ -15,6 +15,6 @@
     "pushbullet": "^2.4.0",
     "request": "^2.88.0",
     "simple-git": "^1.131.0",
-    "tuyapi": "codetheweb/tuyapi"
+    "simple-ifttt-webhooks": "^1.0.3"
   }
 }

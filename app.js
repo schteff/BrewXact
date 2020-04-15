@@ -5,6 +5,7 @@ const PushBullet = require("pushbullet");
 const request = require("request");
 const git = require("simple-git")();
 const exec = require("child_process").exec;
+const siftttwebhooks = require("simple-ifttt-webhooks");
 
 const config = require("./config/config.js"), // import config variables
   port = config.port, // set the port
@@ -31,7 +32,7 @@ app.use(express.static(path.join(__dirname, "public"))); // this middleware serv
 app.use(express.json());
 
 // Initialize server
-var server = app.listen(port, function() {
+var server = app.listen(port, function () {
   console.log("Listening on port %d", server.address().port);
 });
 
@@ -41,7 +42,7 @@ var server = app.listen(port, function() {
 bonjour.publish({ name: "BrewXact", type: "http", host: "brew", port: port });
 
 function saveDataFile() {
-  jsonfile.writeFile(dataFile, dataFileArray, err => (err ? console.error(err) : null));
+  jsonfile.writeFile(dataFile, dataFileArray, (err) => (err ? console.error(err) : null));
 }
 /**
  * Read the data file if it exists
@@ -61,7 +62,7 @@ jsonfile.readFile(dataFile, (err, obj) => {
  */
 const settingsFile = "../settings.json";
 var settings = { minTemp: 62, maxTemp: 67, logInterval: config.standardLogInterval };
-jsonfile.readFile(settingsFile, function(err, obj) {
+jsonfile.readFile(settingsFile, function (err, obj) {
   if (err) {
     console.error(err);
   } else {
@@ -96,19 +97,19 @@ function readTempAndCheck() {
   saveDataFile();
 
   //Check if outside min/max
-  if (settings && settings.minTemp && settings.notify && settings.pushBulletToken) {
-    const tooColdTemps = temps.filter(t => t.t < settings.minTemp);
-    const tooWarmTemps = temps.filter(t => t.t > settings.maxTemp);
+  if (settings && settings.minTemp && settings.maxTemp && settings.notify && settings.pushBulletToken) {
+    const tooColdTemps = temps.filter((t) => t.t < settings.minTemp);
+    const tooWarmTemps = temps.filter((t) => t.t > settings.maxTemp);
     const outsideRange = tooColdTemps.length > 0 || tooWarmTemps.length > 0;
     if (outsideRange && !notificationSent) {
       const hotOrCold = tooColdTemps.length === 0 ? "warm" : "cold";
       const noteTitle = "Temperature too " + hotOrCold;
       const tempsOutOfRange = tooColdTemps.concat(tooWarmTemps);
-      const noteBody = "Temp: " + tempsOutOfRange.map(s => s.t + "°C").join(" & ");
+      const noteBody = "Temp: " + tempsOutOfRange.map((s) => s.t + "°C").join(" & ");
       const pusher = new PushBullet(settings.pushBulletToken);
-      pusher.devices(function(error, response) {
-        response.devices.forEach(device => {
-          pusher.note(device.iden, noteTitle, noteBody, function(error, response) {
+      pusher.devices(function (error, response) {
+        response.devices.forEach((device) => {
+          pusher.note(device.iden, noteTitle, noteBody, function (error, response) {
             console.log("Push sent successfully to device " + device.nickname);
           });
         });
@@ -116,6 +117,33 @@ function readTempAndCheck() {
     }
     notificationSent = outsideRange;
   }
+
+  const sum = temps.map((t) => t.t).reduce((acc, cur) => (cur += acc));
+  const avgTemp = sum / temps.length;
+
+  //Ifttt low temp
+  if (settings && settings.minTemp && settings.iftttEnabled) {
+    if (avgTemp < settings.minTemp) {
+      iftttLowTemp();
+    }
+  }
+
+  //Ifttt high temp
+  if (settings && settings.maxTemp && settings.iftttEnabled) {
+    if (avgTemp < settings.maxTemp) {
+      iftttHighTemp(avgTemp);
+    }
+  }
+}
+
+async function iftttLowTemp(avgTemp) {
+  const res = await siftttwebhooks.sendRequest(settings.iftttLowTempEventName, settings.iftttWebhooksKey, { value1: avgTemp });
+  console.log(res);
+}
+
+async function iftttHighTemp(avgTemp) {
+  const res = await siftttwebhooks.sendRequest(settings.iftttHighTempEventName, settings.iftttWebhooksKey, { value1: avgTemp });
+  console.log(res);
 }
 
 /**
@@ -126,13 +154,13 @@ function trySendLastReadingToBrewfather() {
   if (settings.logToBrewfather && settings.brewfatherStreamUrl) {
     var index = 0;
     const temps = lastReading();
-    settings.customNames.forEach(name => {
+    settings.customNames.forEach((name) => {
       const brewfatherData = {
         name: "Temp sensor " + index,
         temp: temps.temps[index].t,
         temp_unit: "C", // C, F, K
         comment: "Temperature reading",
-        beer: name
+        beer: name,
       };
 
       request.post(settings.brewfatherStreamUrl, { json: brewfatherData }, (error, response, body) => {
@@ -159,8 +187,10 @@ setTimeout(() => {
 app.get("/temps", (req, res) => res.send(JSON.stringify(lastReading())));
 app.get("/init", (req, res) => res.send(JSON.stringify(dataFileArray)));
 app.get("/clear", (req, res) => {
+  console.log("Clearing history");
   //Backup old file
   jsonfile.writeFileSync("../data" + new Date().getTime() + ".json", dataFileArray);
+  console.log("Old history saved to backup file.");
 
   dataFileArray = [{ time: new Date().getTime(), temps: getTemps() }];
   saveDataFile();
@@ -173,7 +203,7 @@ app.post("/saveSettings", (req, res) => {
 
   const oldLogToBrewfather = settings.logToBrewfather;
 
-  jsonfile.writeFile(settingsFile, req.body, function(err) {
+  jsonfile.writeFile(settingsFile, req.body, function (err) {
     if (err) {
       console.error(err);
       res.status(500);
@@ -185,7 +215,7 @@ app.post("/saveSettings", (req, res) => {
       if (!oldLogToBrewfather && settings.logToBrewfather) {
         trySendLastReadingToBrewfather();
       }
-      
+
       if (settings.logInterval != logInterval) {
         logInterval = settings.logInterval;
         clearInterval(logVar);
@@ -200,7 +230,7 @@ app.post("/saveSettings", (req, res) => {
 });
 app.post("/shutdown", (req, res) => {
   console.log("Shutting down");
-  shutdown(output => {
+  shutdown((output) => {
     console.log(output);
     res.status(200);
     res.end();
@@ -208,7 +238,7 @@ app.post("/shutdown", (req, res) => {
 });
 app.post("/reboot", (req, res) => {
   console.log("Rebooting");
-  reboot(output => {
+  reboot((output) => {
     console.log(output);
     res.status(200);
     res.end();
@@ -218,15 +248,15 @@ app.post("/update", (req, res) => {
   console.log("Running GIT PULL");
   git.pull((err, update) => {
     if (update && update.summary.changes) {
-      console.log(update)
+      console.log(update);
       res.send("updating");
       require("child_process").exec("npm restart");
-    }else if(err){
-      console.error(err)
+    } else if (err) {
+      console.error(err);
       res.status(500);
       res.end();
-    }else{
-      console.log(update)
+    } else {
+      console.log(update);
       res.send("noupdate");
     }
   });
