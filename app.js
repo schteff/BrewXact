@@ -90,7 +90,7 @@ function lastReading() {
 var notificationSent = false;
 var logInterval = settings.logInterval;
 var logVar = setInterval(() => readTempAndCheck(), settings.logInterval);
-var tempState = "unknown";
+var lastIftttTempState = "unknown";
 console.log("Starting logging with interval " + logInterval);
 function readTempAndCheck() {
   const temps = getTemps();
@@ -121,31 +121,34 @@ function readTempAndCheck() {
 
   const sum = temps.map((t) => t.t).reduce((acc, cur) => (cur += acc));
   const avgTemp = sum / temps.length;
-  const lowTemp = avgTemp < settings.minTemp;
-  const highTemp = avgTemp > settings.maxTemp;
+  const belowMin = avgTemp < settings.minTemp;
+  const aboveMax = avgTemp > settings.maxTemp;
+  const aboveMin = avgTemp > settings.minTemp;
+  const belowMax = avgTemp < settings.maxTemp;
 
   if (settings.iftttEnabled) {
-    //Ifttt low temp
-    if (lowTemp && tempState !== "low") {
-      iftttLowTemp();
-      tempState = "low";
-    }
-    //Ifttt high temp
-    if (highTemp && tempState !== "high") {
-      iftttHighTemp(avgTemp);
-      tempState = "high";
+    if (lastIftttTempState === "heating" && aboveMin) {
+      iftttCool(avgTemp);
+    } else if (lastIftttTempState === "cooling" && belowMax) {
+      iftttHeat(avgTemp);
+    } else if (belowMin && lastIftttTempState !== "heating") {
+      iftttHeat(avgTemp);
+    } else if (aboveMax && lastIftttTempState !== "cooling") {
+      iftttCool(avgTemp);
     }
   }
 }
 
-async function iftttLowTemp(avgTemp) {
+async function iftttHeat(avgTemp) {
   const res = await siftttwebhooks.sendRequest(settings.iftttLowTempEventName, settings.iftttWebhooksKey, { value1: avgTemp });
   console.log(res);
+  lastIftttTempState = "heating";
 }
 
-async function iftttHighTemp(avgTemp) {
+async function iftttCool(avgTemp) {
   const res = await siftttwebhooks.sendRequest(settings.iftttHighTempEventName, settings.iftttWebhooksKey, { value1: avgTemp });
   console.log(res);
+  lastIftttTempState = "cooling";
 }
 
 /**
