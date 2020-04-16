@@ -95,6 +95,7 @@ var notificationSent = false;
 var logInterval = settings.logInterval;
 var logVar = setInterval(() => readTempAndCheck(), settings.logInterval);
 var lastIftttTempState = "unknown";
+var lastIftttTempStateChange = 0;
 console.log("Starting logging with interval " + logInterval);
 function readTempAndCheck() {
   const temps = getTemps();
@@ -148,14 +149,17 @@ function readTempAndCheck() {
         " lastIftttTempState: " +
         lastIftttTempState
     );
-    if (lastIftttTempState === "heating" && aboveTarget) {
-      iftttCool(avgTemp, targetTemp);
-    } else if (lastIftttTempState === "cooling" && belowTarget) {
-      iftttHeat(avgTemp, targetTemp);
-    } else if (belowMin && lastIftttTempState !== "heating") {
-      iftttHeat(avgTemp, targetTemp);
-    } else if (aboveMax && lastIftttTempState !== "cooling") {
-      iftttCool(avgTemp, targetTemp);
+    const isHeating = lastIftttTempState === "heating";
+    const isCooling = lastIftttTempState === "cooling";
+    const lastChangeWasLongAgo = new Date().getTime() - lastIftttTempStateChange > 15 * 60 * 1000;
+    if (aboveTarget && isHeating) {
+      iftttCool(avgTemp, targetTemp); //Cool because just went above target
+    } else if (belowTarget && isCooling) {
+      iftttHeat(avgTemp, targetTemp); //Heat because just went below target
+    } else if (belowMin && (!isHeating || lastChangeWasLongAgo)) {
+      iftttHeat(avgTemp, targetTemp); //Heat because below min
+    } else if (aboveMax && (!isCooling || lastChangeWasLongAgo)) {
+      iftttCool(avgTemp, targetTemp); //Cool because above max
     }
   }
 }
@@ -164,12 +168,14 @@ async function iftttHeat(avgTemp, targetTemp) {
   const res = await siftttwebhooks.sendRequest(settings.iftttLowTempEventName, settings.iftttWebhooksKey, { value1: avgTemp });
   console.log("Heating. avgTemp: " + avgTemp + " targetTemp: " + targetTemp + " lastState: " + lastIftttTempState);
   lastIftttTempState = "heating";
+  lastIftttTempStateChange = new Date().getTime();
 }
 
 async function iftttCool(avgTemp, targetTemp) {
   const res = await siftttwebhooks.sendRequest(settings.iftttHighTempEventName, settings.iftttWebhooksKey, { value1: avgTemp });
   console.log("Cooling. avgTemp: " + avgTemp + " targetTemp: " + targetTemp + " lastState: " + lastIftttTempState);
   lastIftttTempState = "cooling";
+  lastIftttTempStateChange = new Date().getTime();
 }
 
 /**
