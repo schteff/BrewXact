@@ -128,8 +128,8 @@ function readTempAndCheck() {
   const targetTemp = (settings.minTemp + settings.maxTemp) / 2;
   const belowMin = avgTemp < settings.minTemp;
   const aboveMax = avgTemp > settings.maxTemp;
-  const aboveTarget = avgTemp > targetTemp;
-  const belowTarget = avgTemp < targetTemp;
+  const aboveTarget = avgTemp > targetTemp + 0.1;
+  const belowTarget = avgTemp < targetTemp - 0.1;
 
   if (settings.iftttEnabled) {
     if (lastIftttTempState === "heating" && aboveTarget) {
@@ -146,13 +146,13 @@ function readTempAndCheck() {
 
 async function iftttHeat(avgTemp, targetTemp) {
   const res = await siftttwebhooks.sendRequest(settings.iftttLowTempEventName, settings.iftttWebhooksKey, { value1: avgTemp });
-  console.log("Heating. avgTemp: " + avgTemp + " targetTemp: " + targetTemp);
+  console.log("Heating. avgTemp: " + avgTemp + " targetTemp: " + targetTemp + " lastState: " + lastIftttTempState);
   lastIftttTempState = "heating";
 }
 
 async function iftttCool(avgTemp, targetTemp) {
   const res = await siftttwebhooks.sendRequest(settings.iftttHighTempEventName, settings.iftttWebhooksKey, { value1: avgTemp });
-  console.log("Cooling. avgTemp: " + avgTemp + " targetTemp: " + targetTemp);
+  console.log("Cooling. avgTemp: " + avgTemp + " targetTemp: " + targetTemp + " lastState: " + lastIftttTempState);
   lastIftttTempState = "cooling";
 }
 
