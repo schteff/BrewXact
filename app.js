@@ -90,6 +90,7 @@ function lastReading() {
 var notificationSent = false;
 var logInterval = settings.logInterval;
 var logVar = setInterval(() => readTempAndCheck(), settings.logInterval);
+var tempState = "unknown";
 console.log("Starting logging with interval " + logInterval);
 function readTempAndCheck() {
   const temps = getTemps();
@@ -120,18 +121,19 @@ function readTempAndCheck() {
 
   const sum = temps.map((t) => t.t).reduce((acc, cur) => (cur += acc));
   const avgTemp = sum / temps.length;
+  const lowTemp = avgTemp < settings.minTemp;
+  const highTemp = avgTemp > settings.maxTemp;
 
-  //Ifttt low temp
-  if (settings && settings.minTemp && settings.iftttEnabled) {
-    if (avgTemp < settings.minTemp) {
+  if (settings.iftttEnabled) {
+    //Ifttt low temp
+    if (lowTemp && tempState !== "low") {
       iftttLowTemp();
+      tempState = "low";
     }
-  }
-
-  //Ifttt high temp
-  if (settings && settings.maxTemp && settings.iftttEnabled) {
-    if (avgTemp < settings.maxTemp) {
+    //Ifttt high temp
+    if (highTemp && tempState !== "high") {
       iftttHighTemp(avgTemp);
+      tempState = "high";
     }
   }
 }
