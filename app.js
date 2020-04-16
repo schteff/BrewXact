@@ -51,7 +51,7 @@ const dataFile = "../data.json";
 var dataFileArray = [];
 jsonfile.readFile(dataFile, (err, obj) => {
   if (err) {
-    dataFileArray.push({ time: new Date().getTime(), temps: getTemps() });
+    dataFileArray.push(getDataFileArrayItem());
   } else {
     dataFileArray = obj.concat(dataFileArray);
   }
@@ -84,6 +84,10 @@ function lastReading() {
   return dataFileArray[dataFileArray.length - 1];
 }
 
+function getDataFileArrayItem(temps) {
+  return { time: new Date().getTime(), temps: temps ? temps : getTemps(), iftttState: lastIftttTempState };
+}
+
 /**
  * The loop reading and storing the temperature values to the file / array
  */
@@ -94,7 +98,7 @@ var lastIftttTempState = "unknown";
 console.log("Starting logging with interval " + logInterval);
 function readTempAndCheck() {
   const temps = getTemps();
-  dataFileArray.push({ time: new Date().getTime(), temps: temps });
+  dataFileArray.push(getDataFileArrayItem(temps));
   saveDataFile();
 
   //Check if outside min/max
@@ -121,15 +125,16 @@ function readTempAndCheck() {
 
   const sum = temps.map((t) => t.t).reduce((acc, cur) => (cur += acc));
   const avgTemp = sum / temps.length;
+  const targetTemp = (settings.minTemp + settings.maxTemp) / 2;
   const belowMin = avgTemp < settings.minTemp;
   const aboveMax = avgTemp > settings.maxTemp;
-  const aboveMin = avgTemp > settings.minTemp;
-  const belowMax = avgTemp < settings.maxTemp;
+  const aboveTarget = avgTemp > targetTemp;
+  const belowTarget = avgTemp < targetTemp;
 
   if (settings.iftttEnabled) {
-    if (lastIftttTempState === "heating" && aboveMin) {
+    if (lastIftttTempState === "heating" && aboveTarget) {
       iftttCool(avgTemp);
-    } else if (lastIftttTempState === "cooling" && belowMax) {
+    } else if (lastIftttTempState === "cooling" && belowTarget) {
       iftttHeat(avgTemp);
     } else if (belowMin && lastIftttTempState !== "heating") {
       iftttHeat(avgTemp);
@@ -197,7 +202,7 @@ app.get("/clear", (req, res) => {
   jsonfile.writeFileSync("../data" + new Date().getTime() + ".json", dataFileArray);
   console.log("Old history saved to backup file.");
 
-  dataFileArray = [{ time: new Date().getTime(), temps: getTemps() }];
+  dataFileArray = [getDataFileArrayItem()];
   saveDataFile();
   res.status(200);
   res.end();

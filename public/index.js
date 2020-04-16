@@ -278,6 +278,8 @@ function refresh(gaugeChart, lineChart, chartDataTable, gaugeDataTable) {
       redFrom: settings.maxTemp,
     };
     gaugeChart.draw(gaugeDataTable, gaugeOptions);
+
+    document.getElementById("iftttState").innerHTML = jsonTemp.iftttState;
   });
 }
 
