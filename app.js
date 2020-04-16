@@ -124,7 +124,7 @@ function readTempAndCheck() {
   }
 
   const sum = temps.map((t) => t.t).reduce((acc, cur) => (cur += acc));
-  const avgTemp = sum / temps.filter((t) => !isNan(t.t)).length;
+  const avgTemp = sum / temps.filter((t) => !isNaN(t.t)).length;
   const targetTemp = (settings.minTemp + settings.maxTemp) / 2;
   const belowMin = avgTemp < settings.minTemp + 0;
   const aboveMax = avgTemp > settings.maxTemp + 0;
