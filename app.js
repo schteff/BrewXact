@@ -132,6 +132,22 @@ function readTempAndCheck() {
   const belowTarget = avgTemp < targetTemp - 0.1;
 
   if (settings.iftttEnabled) {
+    console.log(
+      "avgTemp: " +
+        avgTemp +
+        " targetTemp: " +
+        targetTemp +
+        " belowMin: " +
+        belowMin +
+        " aboveMax: " +
+        aboveMax +
+        " aboveTarget: " +
+        aboveTarget +
+        " belowTarget: " +
+        belowTarget +
+        " lastIftttTempState: " +
+        lastIftttTempState
+    );
     if (lastIftttTempState === "heating" && aboveTarget) {
       iftttCool(avgTemp, targetTemp);
     } else if (lastIftttTempState === "cooling" && belowTarget) {
