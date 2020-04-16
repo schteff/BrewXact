@@ -102,7 +102,7 @@ function readTempAndCheck() {
   saveDataFile();
 
   //Check if outside min/max
-  if (settings && settings.minTemp && settings.maxTemp && settings.notify && settings.pushBulletToken) {
+  if (settings.notify && settings.pushBulletToken) {
     const tooColdTemps = temps.filter((t) => t.t < settings.minTemp);
     const tooWarmTemps = temps.filter((t) => t.t > settings.maxTemp);
     const outsideRange = tooColdTemps.length > 0 || tooWarmTemps.length > 0;
@@ -126,8 +126,8 @@ function readTempAndCheck() {
   const sum = temps.map((t) => t.t).reduce((acc, cur) => (cur += acc));
   const avgTemp = sum / temps.length;
   const targetTemp = (settings.minTemp + settings.maxTemp) / 2;
-  const belowMin = avgTemp < settings.minTemp;
-  const aboveMax = avgTemp > settings.maxTemp;
+  const belowMin = avgTemp < settings.minTemp + 0;
+  const aboveMax = avgTemp > settings.maxTemp + 0;
   const aboveTarget = avgTemp > targetTemp + 0.1;
   const belowTarget = avgTemp < targetTemp - 0.1;
 
