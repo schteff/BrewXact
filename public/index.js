@@ -284,7 +284,7 @@ function refresh(gaugeChart, lineChart, chartDataTable, gaugeDataTable) {
     };
     gaugeChart.draw(gaugeDataTable, gaugeOptions);
 
-    document.getElementById("iftttState").innerHTML = jsonTemp.iftttState;
+    document.getElementById("iftttState").innerHTML = jsonTemp.iftttState + " (avg " + jsonTemp.iftttTemp + "°C)";
   });
 }
 

@@ -28,15 +28,13 @@ function reboot(callback) {
   });
 }
 
-exec("npm install", (error, stdout) => (error ? console.error(error) : console.log(stdout)));
+exec("npm install", (error, stdout) => (error ? console.error(error) : console.log("npm install result: " + stdout)));
 
 app.use(express.static(path.join(__dirname, "public"))); // this middleware serves static files, such as .js, .img, .css files
 app.use(express.json());
 
 // Initialize server
-var server = app.listen(port, function () {
-  console.log("Listening on port %d", server.address().port);
-});
+const server = app.listen(port, () => console.log("Listening on port %d", server.address().port));
 
 /**
  * Publish the app on local dns using bonjour
@@ -87,7 +85,7 @@ function lastReading() {
 }
 
 function getDataFileArrayItem(temps) {
-  return { time: new Date().getTime(), temps: temps ? temps : getTemps(), iftttState: lastIftttTempState };
+  return { time: new Date().getTime(), temps: temps ? temps : getTemps(), iftttState: lastIftttTempState, iftttTemp: lastAvgTemp };
 }
 
 /**
@@ -98,6 +96,7 @@ var logInterval = settings.logInterval;
 var logVar = setInterval(() => readTempAndCheck(), settings.logInterval);
 var lastIftttTempState = "unknown";
 var lastIftttTempStateChange = 0;
+var lastAvgTemp = -1;
 console.log("Starting logging with interval " + logInterval);
 function readTempAndCheck() {
   const temps = getTemps();
@@ -149,28 +148,12 @@ function tempController() {
       console.log("missing data? sum: " + sum + " avg: " + avgTemp);
       console.log(temps);
     }
+    lastAvgTemp = avgTemp + 0;
     const targetTemp = (settings.minTemp + settings.maxTemp) / 2;
     const belowMin = avgTemp < settings.minTemp + 0;
     const aboveMax = avgTemp > settings.maxTemp + 0;
     const aboveTarget = avgTemp > targetTemp + 0.1;
     const belowTarget = avgTemp < targetTemp - 0.1;
-
-    // console.log(
-    //   "avgTemp: " +
-    //     avgTemp +
-    //     " targetTemp: " +
-    //     targetTemp +
-    //     " belowMin: " +
-    //     belowMin +
-    //     " aboveMax: " +
-    //     aboveMax +
-    //     " aboveTarget: " +
-    //     aboveTarget +
-    //     " belowTarget: " +
-    //     belowTarget +
-    //     " lastIftttTempState: " +
-    //     lastIftttTempState
-    // );
     const isHeating = lastIftttTempState === "heating";
     const isCooling = lastIftttTempState === "cooling";
     const lastChangeWasLongAgo = new Date().getTime() - lastIftttTempStateChange > 15 * 60 * 1000;
@@ -188,14 +171,14 @@ function tempController() {
 
 async function iftttHeat(avgTemp, targetTemp) {
   const res = await siftttwebhooks.sendRequest(settings.iftttLowTempEventName, settings.iftttWebhooksKey, { value1: avgTemp });
-  console.log("Heating. avgTemp: " + avgTemp + " targetTemp: " + targetTemp + " lastState: " + lastIftttTempState + " newState: heating");
+  console.log("IFTTT Heating. avgTemp: " + avgTemp + " targetTemp: " + targetTemp + " lastState: " + lastIftttTempState + " newState: heating");
   lastIftttTempState = "heating";
   lastIftttTempStateChange = new Date().getTime();
 }
 
 async function iftttCool(avgTemp, targetTemp) {
   const res = await siftttwebhooks.sendRequest(settings.iftttHighTempEventName, settings.iftttWebhooksKey, { value1: avgTemp });
-  console.log("Cooling. avgTemp: " + avgTemp + " targetTemp: " + targetTemp + " lastState: " + lastIftttTempState + " newState: cooling");
+  console.log("IFTTT Cooling. avgTemp: " + avgTemp + " targetTemp: " + targetTemp + " lastState: " + lastIftttTempState + " newState: cooling");
   lastIftttTempState = "cooling";
   lastIftttTempStateChange = new Date().getTime();
 }
