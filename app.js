@@ -57,18 +57,6 @@ jsonfile.readFile(dataFile, (err, obj) => {
   }
   saveDataFile();
 });
-/**
- * Read the settings file if it exists
- */
-const settingsFile = "../settings.json";
-var settings = { minTemp: 62, maxTemp: 67, logInterval: config.standardLogInterval };
-jsonfile.readFile(settingsFile, function (err, obj) {
-  if (err) {
-    console.error(err);
-  } else {
-    settings = obj;
-  }
-});
 
 function getTemps() {
   const temps = sensor.readAllC();
@@ -91,6 +79,7 @@ function getDataFileArrayItem(temps) {
 /**
  * The loop reading and storing the temperature values to the file / array
  */
+var settings = { minTemp: 62, maxTemp: 67, logInterval: config.standardLogInterval };
 var notificationSent = false;
 var logInterval = settings.logInterval;
 var logVar = setInterval(() => readTempAndCheck(), settings.logInterval);
@@ -118,6 +107,21 @@ function readTempAndCheck() {
     notificationSent = outsideRange;
   }
 }
+/**
+ * Read the settings file if it exists
+ */
+const settingsFile = "../settings.json";
+jsonfile.readFile(settingsFile, function (err, obj) {
+  if (err) {
+    console.error(err);
+  } else {
+    settings = obj;
+    logInterval = settings.logInterval;
+    clearInterval(logVar);
+    console.log("Restarting logging with interval " + logInterval);
+    logVar = setInterval(() => readTempAndCheck(), settings.logInterval);
+  }
+});
 
 function push(noteTitle, noteBody) {
   const pusher = new PushBullet(settings.pushBulletToken);
