@@ -28,6 +28,8 @@ function reboot(callback) {
   });
 }
 
+exec("npm install", (error, stdout) => (error ? console.error(error) : console.log(stdout)));
+
 app.use(express.static(path.join(__dirname, "public"))); // this middleware serves static files, such as .js, .img, .css files
 app.use(express.json());
 
@@ -112,25 +114,36 @@ function readTempAndCheck() {
       const noteTitle = "Temperature too " + hotOrCold;
       const tempsOutOfRange = tooColdTemps.concat(tooWarmTemps);
       const noteBody = "Temp: " + tempsOutOfRange.map((s) => s.t + "°C").join(" & ");
-      const pusher = new PushBullet(settings.pushBulletToken);
-      pusher.devices(function (error, response) {
-        response.devices.forEach((device) => {
-          pusher.note(device.iden, noteTitle, noteBody, function (error, response) {
-            console.log("Push sent successfully to device " + device.nickname);
-          });
-        });
-      });
+      push(noteTitle, noteBody);
     }
     notificationSent = outsideRange;
   }
+}
+
+function push(noteTitle, noteBody) {
+  const pusher = new PushBullet(settings.pushBulletToken);
+  pusher.devices(function (error, response) {
+    response.devices.forEach((device) => {
+      pusher.note(device.iden, noteTitle, noteBody, function (error, response) {
+        console.log("Push sent successfully to device " + device.nickname);
+      });
+    });
+  });
 }
 
 setInterval(() => tempController(), 5000);
 function tempController() {
   if (settings.iftttEnabled && settings.iftttWebhooksKey) {
     const temps = getTemps();
-    const sum = temps.map((t) => t.t).reduce((acc, cur) => (cur += acc));
-    const count = temps.filter((t) => !isNaN(t.t)).length;
+    const sum = temps.map((t) => (t.t ? t.t : 0)).reduce((acc, cur) => (cur += acc));
+    const count = temps.filter((t) => t.t).length;
+    if (count === 0) {
+      console.log("No temp found, doing nothing...");
+      if (settings.notify && settings.pushBulletToken) {
+        push("No temperature detected!", "Could not find any sensors!");
+      }
+      return;
+    }
     const avgTemp = sum / count;
     if (avgTemp < 20) {
       console.log("missing data? sum: " + sum + " avg: " + avgTemp);
@@ -291,7 +304,7 @@ app.post("/update", (req, res) => {
     if (update && update.summary.changes) {
       console.log(update);
       res.send("updating");
-      require("child_process").exec("npm install", (error, stdout) => (error ? console.error(error) : console.log(stdout)));
+      exec("npm install", (error, stdout) => (error ? console.error(error) : console.log(stdout)));
     } else if (err) {
       console.error(err);
       res.status(500);
