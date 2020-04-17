@@ -123,32 +123,36 @@ function readTempAndCheck() {
     }
     notificationSent = outsideRange;
   }
+}
 
-  const sum = temps.map((t) => t.t).reduce((acc, cur) => (cur += acc));
-  const avgTemp = sum / temps.filter((t) => !isNaN(t.t)).length;
-  const targetTemp = (settings.minTemp + settings.maxTemp) / 2;
-  const belowMin = avgTemp < settings.minTemp + 0;
-  const aboveMax = avgTemp > settings.maxTemp + 0;
-  const aboveTarget = avgTemp > targetTemp + 0.1;
-  const belowTarget = avgTemp < targetTemp - 0.1;
+setInterval(() => tempController(), 5000);
+function tempController() {
+  if (settings.iftttEnabled && settings.iftttWebhooksKey) {
+    const temps = getTemps();
+    const sum = temps.map((t) => t.t).reduce((acc, cur) => (cur += acc));
+    const avgTemp = sum / temps.filter((t) => !isNaN(t.t)).length;
+    const targetTemp = (settings.minTemp + settings.maxTemp) / 2;
+    const belowMin = avgTemp < settings.minTemp + 0;
+    const aboveMax = avgTemp > settings.maxTemp + 0;
+    const aboveTarget = avgTemp > targetTemp + 0.1;
+    const belowTarget = avgTemp < targetTemp - 0.1;
 
-  if (settings.iftttEnabled) {
-    console.log(
-      "avgTemp: " +
-        avgTemp +
-        " targetTemp: " +
-        targetTemp +
-        " belowMin: " +
-        belowMin +
-        " aboveMax: " +
-        aboveMax +
-        " aboveTarget: " +
-        aboveTarget +
-        " belowTarget: " +
-        belowTarget +
-        " lastIftttTempState: " +
-        lastIftttTempState
-    );
+    // console.log(
+    //   "avgTemp: " +
+    //     avgTemp +
+    //     " targetTemp: " +
+    //     targetTemp +
+    //     " belowMin: " +
+    //     belowMin +
+    //     " aboveMax: " +
+    //     aboveMax +
+    //     " aboveTarget: " +
+    //     aboveTarget +
+    //     " belowTarget: " +
+    //     belowTarget +
+    //     " lastIftttTempState: " +
+    //     lastIftttTempState
+    // );
     const isHeating = lastIftttTempState === "heating";
     const isCooling = lastIftttTempState === "cooling";
     const lastChangeWasLongAgo = new Date().getTime() - lastIftttTempStateChange > 15 * 60 * 1000;
@@ -282,7 +286,7 @@ app.post("/update", (req, res) => {
     if (update && update.summary.changes) {
       console.log(update);
       res.send("updating");
-      require("child_process").exec("npm restart");
+      require("child_process").exec("npm install", (error, stdout) => (error ? console.error(error) : console.log(stdout)));
     } else if (err) {
       console.error(err);
       res.status(500);
