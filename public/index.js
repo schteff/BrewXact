@@ -208,22 +208,27 @@ function start(firstTemps) {
 
   firstTemps[firstTemps.length - 1].temps.forEach((sensor) => {
     chartDataTable.addColumn("number", sensor.id);
+    const idAttr = sensor.id + "_name";
 
     // -----
-    const label = document.createElement("SPAN");
-    label.append(sensor.id + ": ");
-    sensorNamesWrapper.append(label);
+    const wrapper = document.createElement("DIV");
+    wrapper.setAttribute("class", "input-field col s4");
 
     const nameInput = document.createElement("INPUT");
     customNameInputs.push(nameInput);
-    nameInput.setAttribute("id", sensor.id + "_name");
+    nameInput.setAttribute("id", idAttr);
     nameInput.setAttribute("type", "text");
     const index = customNameInputs.indexOf(nameInput);
     const customName = customNames[index];
     nameInput.setAttribute("value", customName ? customName : "Mätare " + (index + 1));
-    sensorNamesWrapper.append(nameInput);
+    wrapper.append(nameInput);
 
-    sensorNamesWrapper.append(document.createElement("BR"));
+    const label = document.createElement("LABEL");
+    label.setAttribute("for", idAttr);
+    label.append(sensor.id + "");
+    wrapper.append(label);
+
+    sensorNamesWrapper.append(wrapper);
 
     // -----
 

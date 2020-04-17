@@ -133,7 +133,7 @@ function tempController() {
     const count = temps.filter((t) => !isNaN(t.t)).length;
     const avgTemp = sum / count;
     if (avgTemp < 20) {
-      console.log("missing data? sum: " + sum + " avg: " + avg);
+      console.log("missing data? sum: " + sum + " avg: " + avgTemp);
       console.log(temps);
     }
     const targetTemp = (settings.minTemp + settings.maxTemp) / 2;
