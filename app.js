@@ -130,7 +130,12 @@ function tempController() {
   if (settings.iftttEnabled && settings.iftttWebhooksKey) {
     const temps = getTemps();
     const sum = temps.map((t) => t.t).reduce((acc, cur) => (cur += acc));
-    const avgTemp = sum / temps.filter((t) => !isNaN(t.t)).length;
+    const count = temps.filter((t) => !isNaN(t.t)).length;
+    const avgTemp = sum / count;
+    if (avgTemp < 20) {
+      console.log("missing data? sum: " + sum + " avg: " + avg);
+      console.log(temps);
+    }
     const targetTemp = (settings.minTemp + settings.maxTemp) / 2;
     const belowMin = avgTemp < settings.minTemp + 0;
     const aboveMax = avgTemp > settings.maxTemp + 0;
