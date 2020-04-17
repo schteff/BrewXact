@@ -223,12 +223,13 @@ function start(firstTemps) {
     nameInput.setAttribute("value", customName ? customName : "Mätare " + (index + 1));
     wrapper.append(nameInput);
 
-    sensorNamesWrapper.append(wrapper);
-
     const label = document.createElement("LABEL");
     label.setAttribute("for", idAttr);
+    label.setAttribute("class", "active");
     label.append(sensor.id + "");
     wrapper.append(label);
+
+    sensorNamesWrapper.append(wrapper);
 
     // -----
 
