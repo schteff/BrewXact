@@ -43,9 +43,11 @@ const server = app.listen(port, () => console.log("Listening on port %d", server
 bonjour.publish({ name: "BrewXact", type: "http", host: "brew", port: port });
 
 var localtunnelUrl = "not available";
-(async function () {
+async function refreshNgrok() {
   localtunnelUrl = await ngrok.connect(port);
-})();
+}
+refreshNgrok();
+setInterval(() => refreshNgrok(), 3600000); //One hour
 
 function saveDataFile() {
   jsonfile.writeFile(dataFile, dataFileArray, (err) => (err ? console.error(err) : null));
@@ -225,7 +227,7 @@ function trySendLastReadingToBrewfather() {
       const dex = index + 0;
       request.post(settings.brewfatherStreamUrl, { json: brewfatherData }, (error, response, body) => {
         if (!error && response.statusCode == 200) {
-          console.log("Successful logging temp sensor " + dex + " to brewfather");
+          console.log("Successful logged temp sensor " + dex + " " + name + " to brewfather");
         } else if (error) {
           console.error(error);
         }
@@ -246,6 +248,7 @@ setTimeout(() => {
  */
 app.get("/temps", (req, res) => res.send(JSON.stringify(lastReading())));
 app.get("/init", (req, res) => res.send(JSON.stringify(dataFileArray)));
+app.get("/getSettings", (req, res) => res.send(JSON.stringify(settings)));
 app.get("/clear", (req, res) => {
   console.log("Clearing history");
   //Backup old file
@@ -257,7 +260,6 @@ app.get("/clear", (req, res) => {
   res.status(200);
   res.end();
 });
-app.get("/getSettings", (req, res) => res.send(JSON.stringify(settings)));
 app.post("/saveSettings", (req, res) => {
   console.log("Saving settings " + JSON.stringify(req.body));
 
