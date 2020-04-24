@@ -6,6 +6,7 @@ const request = require("request");
 const git = require("simple-git")();
 const exec = require("child_process").exec;
 const siftttwebhooks = require("simple-ifttt-webhooks");
+const ngrok = require("ngrok");
 
 const config = require("./config/config.js"), // import config variables
   port = config.port, // set the port
@@ -40,6 +41,11 @@ const server = app.listen(port, () => console.log("Listening on port %d", server
  * Publish the app on local dns using bonjour
  */
 bonjour.publish({ name: "BrewXact", type: "http", host: "brew", port: port });
+
+var localtunnelUrl = "not available";
+(async function () {
+  localtunnelUrl = await ngrok.connect(port);
+})();
 
 function saveDataFile() {
   jsonfile.writeFile(dataFile, dataFileArray, (err) => (err ? console.error(err) : null));
@@ -208,14 +214,18 @@ function trySendLastReadingToBrewfather() {
         beer: name,
         aux_temp: Math.round((avgTemp + Number.EPSILON) * 100) / 100,
         comment:
-          "Temperature reading. " + lastIftttTempState + " since " + (lastIftttTempStateChange ? new Date(lastIftttTempStateChange).toLocaleTimeString() : "?"),
+          "Temperature reading. " +
+          lastIftttTempState +
+          " since " +
+          (lastIftttTempStateChange ? new Date(lastIftttTempStateChange).toLocaleTimeString() : "?") +
+          " configUrl: " +
+          localtunnelUrl,
       };
 
-      console.log(brewfatherData);
-
+      const dex = index + 0;
       request.post(settings.brewfatherStreamUrl, { json: brewfatherData }, (error, response, body) => {
         if (!error && response.statusCode == 200) {
-          console.log("Successful logging temp sensor " + index + " to brewfather");
+          console.log("Successful logging temp sensor " + dex + " to brewfather");
         } else if (error) {
           console.error(error);
         }
