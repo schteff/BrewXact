@@ -73,7 +73,7 @@ function lastReading() {
 }
 
 function getDataFileArrayItem(temps) {
-  return { time: new Date().getTime(), temps: temps ? temps : getTemps(), iftttState: lastIftttTempState, iftttTemp: lastAvgTemp };
+  return { time: Date.now(), temps: temps ? temps : getTemps(), iftttState: lastIftttTempState, iftttTemp: lastAvgTemp };
 }
 
 /**
@@ -138,19 +138,13 @@ setInterval(() => tempController(), 5000);
 function tempController() {
   if (settings.iftttEnabled && settings.iftttWebhooksKey) {
     const temps = getTemps();
-    const sum = temps.map((t) => (t.t ? t.t : 0)).reduce((acc, cur) => (cur += acc));
-    const count = temps.filter((t) => t.t).length;
-    if (count === 0) {
+    const avgTemp = getAvg(temps);
+    if (avgTemp === -100) {
       console.log("No temp found, doing nothing...");
       if (settings.notify && settings.pushBulletToken) {
         push("No temperature detected!", "Could not find any sensors!");
       }
       return;
-    }
-    const avgTemp = sum / count;
-    if (avgTemp < 20) {
-      console.log("missing data? sum: " + sum + " avg: " + avgTemp);
-      console.log(temps);
     }
     lastAvgTemp = avgTemp + 0;
     const targetTemp = (settings.minTemp + settings.maxTemp) / 2;
@@ -160,7 +154,7 @@ function tempController() {
     const belowTarget = avgTemp < targetTemp - 0.1;
     const isHeating = lastIftttTempState === "heating";
     const isCooling = lastIftttTempState === "cooling";
-    const lastChangeWasLongAgo = new Date().getTime() - lastIftttTempStateChange > 15 * 60 * 1000;
+    const lastChangeWasLongAgo = Date.now() - lastIftttTempStateChange > 15 * 60 * 1000;
     if (aboveTarget && isHeating) {
       iftttCool(avgTemp, targetTemp); //Cool because just went above target
     } else if (belowTarget && isCooling) {
@@ -173,18 +167,28 @@ function tempController() {
   }
 }
 
+function getAvg(temps) {
+  const sum = temps.map((t) => (t.t ? t.t : 0)).reduce((acc, cur) => (cur += acc));
+  const count = temps.filter((t) => t.t).length;
+  if (count === 0) {
+    return -100;
+  }
+  const avgTemp = sum / count;
+  return avgTemp;
+}
+
 async function iftttHeat(avgTemp, targetTemp) {
   const res = await siftttwebhooks.sendRequest(settings.iftttLowTempEventName, settings.iftttWebhooksKey, { value1: avgTemp });
   console.log("IFTTT Heating. avgTemp: " + avgTemp + " targetTemp: " + targetTemp + " lastState: " + lastIftttTempState + " newState: heating");
   lastIftttTempState = "heating";
-  lastIftttTempStateChange = new Date().getTime();
+  lastIftttTempStateChange = Date.now();
 }
 
 async function iftttCool(avgTemp, targetTemp) {
   const res = await siftttwebhooks.sendRequest(settings.iftttHighTempEventName, settings.iftttWebhooksKey, { value1: avgTemp });
   console.log("IFTTT Cooling. avgTemp: " + avgTemp + " targetTemp: " + targetTemp + " lastState: " + lastIftttTempState + " newState: cooling");
   lastIftttTempState = "cooling";
-  lastIftttTempStateChange = new Date().getTime();
+  lastIftttTempStateChange = Date.now();
 }
 
 /**
@@ -194,15 +198,20 @@ async function iftttCool(avgTemp, targetTemp) {
 function trySendLastReadingToBrewfather() {
   if (settings.logToBrewfather && settings.brewfatherStreamUrl) {
     var index = 0;
-    const temps = lastReading();
+    const temps = getTemps();
+    const avgTemp = getAvg(temps);
     settings.customNames.forEach((name) => {
       const brewfatherData = {
         name: "Temp sensor " + index,
-        temp: temps.temps[index].t,
+        temp: temps[index].t,
         temp_unit: "C", // C, F, K
-        comment: "Temperature reading",
         beer: name,
+        aux_temp: Math.round((avgTemp + Number.EPSILON) * 100) / 100,
+        comment:
+          "Temperature reading. " + lastIftttTempState + " since " + (lastIftttTempStateChange ? new Date(lastIftttTempStateChange).toLocaleTimeString() : "?"),
       };
+
+      console.log(brewfatherData);
 
       request.post(settings.brewfatherStreamUrl, { json: brewfatherData }, (error, response, body) => {
         if (!error && response.statusCode == 200) {
@@ -230,7 +239,7 @@ app.get("/init", (req, res) => res.send(JSON.stringify(dataFileArray)));
 app.get("/clear", (req, res) => {
   console.log("Clearing history");
   //Backup old file
-  jsonfile.writeFileSync("../data" + new Date().getTime() + ".json", dataFileArray);
+  jsonfile.writeFileSync("../data" + Date.now() + ".json", dataFileArray);
   console.log("Old history saved to backup file.");
 
   dataFileArray = [getDataFileArrayItem()];
