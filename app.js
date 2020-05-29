@@ -136,7 +136,7 @@ async function refreshNgrok() {
       console.log("disconnecting old ngrok tunnel");
       await ngrok.disconnect(localtunnelUrl);
     }
-    localtunnelUrl = await ngrok.connect({ addr: port, authtoken: settings.ngrokAuthToken ? settings.ngrokAuthToken : null });
+    localtunnelUrl = await ngrok.connect({ addr: port, region: "eu", authtoken: settings.ngrokAuthToken ? settings.ngrokAuthToken : null });
     console.log("new ngrok tunnel url: " + localtunnelUrl);
   } else {
     if (localtunnelUrl.startsWith("htt")) {
@@ -200,7 +200,7 @@ function getAvg(temps) {
     return -100;
   }
   const avgTemp = sum / count;
-  return avgTemp;
+  return Math.round(avgTemp * 100) / 100;
 }
 
 async function iftttHeat(avgTemp, targetTemp) {
