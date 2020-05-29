@@ -60,7 +60,7 @@ jsonfile.readFile(dataFile, (err, obj) => {
 });
 
 function getTemps() {
-  const temps = sensor.readAllC(3, (e) => console.error("read error", e));
+  const temps = sensor.readAllC(2);
   if (temps.length == 0) {
     console.log("no temp sensors found", temps);
     //Mock values
@@ -130,13 +130,19 @@ jsonfile.readFile(settingsFile, function (err, obj) {
 
 var localtunnelUrl = "not available";
 async function refreshNgrok() {
+  console.log("ngrok enabled: " + settings.ngrokEnabled);
   if (settings.ngrokEnabled) {
     if (localtunnelUrl.startsWith("htt")) {
+      console.log("disconnecting old ngrok tunnel");
       await ngrok.disconnect(localtunnelUrl);
     }
     localtunnelUrl = await ngrok.connect({ addr: port, authtoken: settings.ngrokAuthToken ? settings.ngrokAuthToken : null });
+    console.log("new ngrok tunnel url: " + localtunnelUrl);
   } else {
-    await ngrok.disconnect(localtunnelUrl);
+    if (localtunnelUrl.startsWith("htt")) {
+      console.log("disconnecting old ngrok tunnel (ngrok disabled)");
+      await ngrok.disconnect(localtunnelUrl);
+    }
     localtunnelUrl = "disconnected";
   }
 }
