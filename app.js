@@ -112,21 +112,6 @@ function readTempAndCheck() {
     notificationSent = outsideRange;
   }
 }
-/**
- * Read the settings file if it exists
- */
-const settingsFile = "../settings.json";
-jsonfile.readFile(settingsFile, function (err, obj) {
-  if (err) {
-    console.error(err);
-  } else {
-    settings = obj;
-    logInterval = settings.logInterval;
-    clearInterval(logVar);
-    console.log("Restarting logging with interval " + logInterval);
-    logVar = setInterval(() => readTempAndCheck(), settings.logInterval);
-  }
-});
 
 var localtunnelUrl = "not available";
 async function refreshNgrok() {
@@ -146,8 +131,24 @@ async function refreshNgrok() {
     localtunnelUrl = "disconnected";
   }
 }
-refreshNgrok();
 setInterval(() => refreshNgrok(), 12 * 3600000); //12 hours
+
+/**
+ * Read the settings file if it exists
+ */
+const settingsFile = "../settings.json";
+jsonfile.readFile(settingsFile, function (err, obj) {
+  if (err) {
+    console.error(err);
+  } else {
+    settings = obj;
+    logInterval = settings.logInterval;
+    clearInterval(logVar);
+    console.log("Restarting logging with interval " + logInterval);
+    logVar = setInterval(() => readTempAndCheck(), settings.logInterval);
+    refreshNgrok();
+  }
+});
 
 function push(noteTitle, noteBody) {
   const pusher = new PushBullet(settings.pushBulletToken);
