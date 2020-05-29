@@ -66,6 +66,7 @@ function getTemps() {
     //Mock values
     temps.push({ id: "foo1", t: 40 + new Date().getSeconds() });
     temps.push({ id: "foo2", t: 90 - new Date().getSeconds() });
+    temps.push({ id: "foo3", t: 22 });
   }
   return temps;
 }
@@ -165,7 +166,7 @@ setInterval(() => tempController(), 5000);
 function tempController() {
   if (settings.iftttEnabled && settings.iftttWebhooksKey) {
     const temps = getTemps();
-    const avgTemp = getAvg(temps);
+    const avgTemp = getAvgBeerTemp(temps);
     if (avgTemp === -100) {
       console.log("No temp found, doing nothing...");
       if (settings.notify && settings.pushBulletToken) {
@@ -194,14 +195,26 @@ function tempController() {
   }
 }
 
-function getAvg(temps) {
-  const sum = temps.map((t) => (t.t ? t.t : 0)).reduce((acc, cur) => (cur += acc));
-  const count = temps.filter((t) => t.t).length;
+function getAvgBeerTemp(temps) {
+  const beerTemps = temps.filter((t) => settings.tempTypes[t.id] !== "room");
+  const sum = beerTemps.map((t) => (t.t ? t.t : 0)).reduce((acc, cur) => (cur += acc));
+  const count = beerTemps.filter((t) => t.t).length;
   if (count === 0) {
     return -100;
   }
   const avgTemp = sum / count;
-  return Math.round(avgTemp * 100) / 100;
+  return Math.round((avgTemp + Number.EPSILON) * 100) / 100;
+}
+
+function getAvgRoomTemp(temps) {
+  const roomTemps = temps.filter((t) => settings.tempTypes[t.id] === "room");
+  const sum = roomTemps.map((t) => (t.t ? t.t : 0)).reduce((acc, cur) => (cur += acc));
+  const count = roomTemps.filter((t) => t.t).length;
+  if (count === 0) {
+    return -100;
+  }
+  const avgTemp = sum / count;
+  return Math.round((avgTemp + Number.EPSILON) * 100) / 100;
 }
 
 async function iftttHeat(avgTemp, targetTemp) {
@@ -224,35 +237,40 @@ async function iftttCool(avgTemp, targetTemp) {
 
 function trySendLastReadingToBrewfather() {
   if (settings.logToBrewfather && settings.brewfatherStreamUrl) {
-    var index = 0;
     const temps = getTemps();
-    const avgTemp = getAvg(temps);
-    settings.customNames.forEach((name) => {
+    const avgBeerTemp = getAvgBeerTemp(temps);
+    const avgRoomTemp = getAvgRoomTemp(temps);
+    Object.entries(settings.customNames).forEach((key, value) => {
+      const sensor = key[0];
+      const tempType = settings.tempTypes[sensor];
+      if (tempType !== "beer") {
+        return;
+      }
+      const name = key[1];
+      const temp = temps.filter((t) => t.id === sensor)[0].t;
       const brewfatherData = {
-        name: "Temp sensor " + index,
-        temp: temps[index].t,
+        name: sensor + name,
+        temp: temp,
         temp_unit: "C", // C, F, K
         beer: name,
-        aux_temp: Math.round((avgTemp + Number.EPSILON) * 100) / 100,
+        aux_temp: avgBeerTemp,
+        ext_temp: avgRoomTemp,
         comment:
           "Temperature reading. " +
           lastIftttTempState +
           " since " +
           (lastIftttTempStateChange ? new Date(lastIftttTempStateChange).toLocaleTimeString() : "?") +
-          " configUrl: " +
-          localtunnelUrl,
+          " sensor: " +
+          sensor,
       };
 
-      const dex = index + 0;
       request.post(settings.brewfatherStreamUrl, { json: brewfatherData }, (error, response, body) => {
         if (!error && response.statusCode == 200) {
-          console.log("Successful logged temp sensor " + dex + " " + name + " to brewfather");
+          console.log("Successful logged temp sensor " + sensor + " " + name + " to brewfather");
         } else if (error) {
           console.error(error);
         }
       });
-
-      index++;
     });
   }
 }
@@ -283,6 +301,7 @@ app.post("/saveSettings", (req, res) => {
   console.log("Saving settings " + JSON.stringify(req.body));
 
   const oldLogToBrewfather = settings.logToBrewfather;
+  const oldNgrokEnabled = settings.ngrokEnabled;
 
   jsonfile.writeFile(settingsFile, req.body, function (err) {
     if (err) {
@@ -303,8 +322,9 @@ app.post("/saveSettings", (req, res) => {
         console.log("Restarting logging with interval " + logInterval);
         logVar = setInterval(() => readTempAndCheck(), settings.logInterval);
       }
-
-      refreshNgrok();
+      if (oldNgrokEnabled !== settings.ngrokEnabled) {
+        refreshNgrok();
+      }
     }
   });
   notificationSent = false;

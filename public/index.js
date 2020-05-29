@@ -53,12 +53,16 @@ function shutdownDevice() {
 
 const refreshInterval = 6000;
 
+const customNames = {};
+const tempTypes = {};
+
 function setGuiSettings(settings) {
   if (settings.minTemp) document.getElementById("minTemp").value = settings.minTemp;
   if (settings.maxTemp) document.getElementById("maxTemp").value = settings.maxTemp;
   if (settings.logInterval) document.getElementById("logInterval").value = settings.logInterval / 1000;
   if (settings.pushBulletToken) document.getElementById("pushBulletToken").value = settings.pushBulletToken;
-  if (settings.customNames) settings.customNames.forEach((name) => customNames.push(name));
+  if (settings.customNames) Object.entries(settings.customNames).forEach((key, value) => (customNames[key[0]] = key[1]));
+  if (settings.tempTypes) Object.entries(settings.tempTypes).forEach((key, value) => (tempTypes[key[0]] = key[1]));
   if (settings.brewfatherStreamUrl) document.getElementById("brewfatherUrl").value = settings.brewfatherStreamUrl;
   document.getElementById("bfEnabled").checked = settings.logToBrewfather;
   if (!settings.logToBrewfather) document.getElementById("brewfather_wrapper").classList.add("hide");
@@ -96,7 +100,13 @@ function getGuiSettings() {
   const minTemp = Number(document.getElementById("minTemp").value);
   const maxTemp = Number(document.getElementById("maxTemp").value);
   const logInterval = Number(document.getElementById("logInterval").value) * 1000;
-  const customNames = customNameInputs.map((input) => input.value);
+  const customNames = {};
+  customNameInputs.forEach((input) => (customNames[input.id.replace("_name", "")] = input.value));
+  const tempTypes = {};
+  customNameInputs.forEach((input) => {
+    const sensorName = input.id.replace("_name", "");
+    tempTypes[sensorName] = document.getElementById(sensorName + "_roomtemp").checked ? "room" : "beer";
+  });
   const notify = document.getElementById("notificationsEnabled").checked;
   const pushBulletToken = document.getElementById("pushBulletToken").value;
   const brewfatherStreamUrl = document.getElementById("brewfatherUrl").value;
@@ -114,6 +124,7 @@ function getGuiSettings() {
     maxTemp: maxTemp,
     logInterval: logInterval,
     customNames: customNames,
+    tempTypes: tempTypes,
     notify: notify,
     pushBulletToken: pushBulletToken,
     brewfatherStreamUrl: brewfatherStreamUrl,
@@ -139,8 +150,6 @@ document.getElementById("iftttEnabled").addEventListener("change", (event) => do
 document.getElementById("ngrokEnabled").addEventListener("change", (event) => document.getElementById("ngrok_wrapper").classList.toggle("hide"));
 
 const customNameInputs = [];
-const customNames = [];
-const sensorNamesWrapper = document.getElementById("sensor_names");
 
 const chartOptions = {
   title: "Temperatüren",
@@ -190,30 +199,69 @@ function start(firstTemps) {
   gaugeDataTable.addColumn("string", "Label");
   gaugeDataTable.addColumn("number", "Value");
 
+  const sensorsNamesWrapper = document.getElementById("sensor_names");
+  const sensorsRadiosWrapper = document.getElementById("sensor_room_switches");
   firstTemps[firstTemps.length - 1].temps.forEach((sensor) => {
     chartDataTable.addColumn("number", sensor.id);
-    const idAttr = sensor.id + "_name";
+    const sensorNameInputId = sensor.id + "_name";
 
     // -----
-    const wrapper = document.createElement("DIV");
-    wrapper.setAttribute("class", "input-field col s4");
+    const sensorWrapper = document.createElement("DIV");
+    sensorWrapper.setAttribute("class", "input-field col s4");
 
-    const nameInput = document.createElement("INPUT");
-    customNameInputs.push(nameInput);
-    nameInput.setAttribute("id", idAttr);
-    nameInput.setAttribute("type", "text");
-    const index = customNameInputs.indexOf(nameInput);
-    const customName = customNames[index];
-    nameInput.setAttribute("value", customName ? customName : "Mätare " + (index + 1));
-    wrapper.append(nameInput);
+    const sensorNameInput = document.createElement("INPUT");
+    sensorNameInput.setAttribute("id", sensorNameInputId);
+    sensorNameInput.setAttribute("type", "text");
+    customNameInputs.push(sensorNameInput);
+    const index = customNameInputs.indexOf(sensorNameInput);
+    const name = customNames[sensor.id + ""];
+    sensorNameInput.setAttribute("value", name ? name : "Mätare " + (index + 1));
+    sensorWrapper.append(sensorNameInput);
 
-    const label = document.createElement("LABEL");
-    label.setAttribute("for", idAttr);
-    label.setAttribute("class", "active");
-    label.append(sensor.id + "");
-    wrapper.append(label);
+    const sensorNameLabel = document.createElement("LABEL");
+    sensorNameLabel.setAttribute("for", sensorNameInputId);
+    sensorNameLabel.setAttribute("class", "active");
+    sensorNameLabel.append(sensor.id + "");
+    sensorWrapper.append(sensorNameLabel);
 
-    sensorNamesWrapper.append(wrapper);
+    sensorsNamesWrapper.append(sensorWrapper);
+
+    const tempType = tempTypes[sensor.id + ""];
+
+    const sensorRoomTempRadioId = sensor.id + "_roomtemp";
+    const roomRadioInput = document.createElement("INPUT");
+    roomRadioInput.setAttribute("id", sensorRoomTempRadioId);
+    roomRadioInput.setAttribute("type", "radio");
+    roomRadioInput.setAttribute("name", sensor.id + "_group");
+    roomRadioInput.checked = tempType === "room";
+    const roomRadioLabel = document.createElement("LABEL");
+    roomRadioLabel.setAttribute("for", sensorRoomTempRadioId);
+    roomRadioLabel.append("Room temp");
+
+    const roomRadioP = document.createElement("P");
+    roomRadioP.append(roomRadioInput);
+    roomRadioP.append(roomRadioLabel);
+
+    const sensorBeerSwitchId = sensor.id + "_beertemp";
+    const beerRadioInput = document.createElement("INPUT");
+    beerRadioInput.setAttribute("id", sensorBeerSwitchId);
+    beerRadioInput.setAttribute("type", "radio");
+    beerRadioInput.setAttribute("name", sensor.id + "_group");
+    beerRadioInput.checked = tempType !== "room";
+    const beerRadioLabel = document.createElement("LABEL");
+    beerRadioLabel.setAttribute("for", sensorBeerSwitchId);
+    beerRadioLabel.append("Beer temp");
+
+    const beerRadioP = document.createElement("P");
+    beerRadioP.append(beerRadioInput);
+    beerRadioP.append(beerRadioLabel);
+
+    const radioWrapper = document.createElement("DIV");
+    radioWrapper.setAttribute("class", "switch col s4");
+    radioWrapper.append(beerRadioP);
+    radioWrapper.append(roomRadioP);
+
+    sensorsRadiosWrapper.append(radioWrapper);
 
     // -----
 
