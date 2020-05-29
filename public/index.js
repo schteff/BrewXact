@@ -54,53 +54,29 @@ function shutdownDevice() {
 const refreshInterval = 6000;
 
 function setGuiSettings(settings) {
-  if (settings.minTemp) {
-    document.getElementById("minTemp").value = settings.minTemp;
-  }
-  if (settings.maxTemp) {
-    document.getElementById("maxTemp").value = settings.maxTemp;
-  }
-  if (settings.logInterval) {
-    document.getElementById("logInterval").value = settings.logInterval / 1000;
-  }
-  if (settings.pushBulletToken) {
-    document.getElementById("pushBulletToken").value = settings.pushBulletToken;
-  }
-  if (settings.customNames) {
-    settings.customNames.forEach((name) => customNames.push(name));
-  }
-  if (settings.brewfatherStreamUrl) {
-    document.getElementById("brewfatherUrl").value = settings.brewfatherStreamUrl;
-  }
+  if (settings.minTemp) document.getElementById("minTemp").value = settings.minTemp;
+  if (settings.maxTemp) document.getElementById("maxTemp").value = settings.maxTemp;
+  if (settings.logInterval) document.getElementById("logInterval").value = settings.logInterval / 1000;
+  if (settings.pushBulletToken) document.getElementById("pushBulletToken").value = settings.pushBulletToken;
+  if (settings.customNames) settings.customNames.forEach((name) => customNames.push(name));
+  if (settings.brewfatherStreamUrl) document.getElementById("brewfatherUrl").value = settings.brewfatherStreamUrl;
   document.getElementById("bfEnabled").checked = settings.logToBrewfather;
-  if (!settings.logToBrewfather) {
-    document.getElementById("brewfather_wrapper").classList.add("hide");
-  }
+  if (!settings.logToBrewfather) document.getElementById("brewfather_wrapper").classList.add("hide");
   document.getElementById("notificationsEnabled").checked = settings.notify;
-  if (!settings.notify) {
-    document.getElementById("pushbullet_wrapper").classList.add("hide");
-  }
+  if (!settings.notify) document.getElementById("pushbullet_wrapper").classList.add("hide");
   document.getElementById("iftttEnabled").checked = settings.iftttEnabled;
-  if (!settings.iftttEnabled) {
-    document.getElementById("ifttt_wrapper").classList.add("hide");
-  }
-  if (settings.iftttWebhooksKey) {
-    document.getElementById("iftttWebhooksKey").value = settings.iftttWebhooksKey;
-  }
-  if (settings.iftttLowTempEventName) {
-    document.getElementById("iftttLowTempEventName").value = settings.iftttLowTempEventName;
-  }
-  if (settings.iftttHighTempEventName) {
-    document.getElementById("iftttHighTempEventName").value = settings.iftttHighTempEventName;
-  }
+  if (!settings.iftttEnabled) document.getElementById("ifttt_wrapper").classList.add("hide");
+  if (settings.iftttWebhooksKey) document.getElementById("iftttWebhooksKey").value = settings.iftttWebhooksKey;
+  if (settings.iftttLowTempEventName) document.getElementById("iftttLowTempEventName").value = settings.iftttLowTempEventName;
+  if (settings.iftttHighTempEventName) document.getElementById("iftttHighTempEventName").value = settings.iftttHighTempEventName;
+  if (settings.ngrokAuthToken) document.getElementById("ngrokAuthToken").value = settings.ngrokAuthToken;
+  document.getElementById("ngrokEnabled").checked = settings.ngrokEnabled;
   document.getElementById("measuringEnabled").checked = settings.measuring;
 }
 
 function downloadChart(chart) {
   var a = $("<a>").attr("href", chart.getImageURI()).attr("download", "chart.png").appendTo("body");
-
   a[0].click();
-
   a.remove();
 }
 
@@ -128,7 +104,9 @@ function getGuiSettings() {
   const iftttWebhooksKey = document.getElementById("iftttWebhooksKey").value;
   const iftttLowTempEventName = document.getElementById("iftttLowTempEventName").value;
   const iftttHighTempEventName = document.getElementById("iftttHighTempEventName").value;
-  const measuring = document.getElementById("measuringEnabled").checked
+  const measuring = document.getElementById("measuringEnabled").checked;
+  const ngrokEnabled = document.getElementById("ngrokEnabled").checked;
+  const ngrokAuthToken = document.getElementById("ngrokAuthToken").value;
   return {
     measuring: measuring,
     minTemp: minTemp,
@@ -143,6 +121,8 @@ function getGuiSettings() {
     iftttWebhooksKey: iftttWebhooksKey,
     iftttLowTempEventName: iftttLowTempEventName,
     iftttHighTempEventName: iftttHighTempEventName,
+    ngrokAuthToken: ngrokAuthToken,
+    ngrokEnabled: ngrokEnabled,
   };
 }
 
@@ -155,6 +135,7 @@ document.getElementById("shutdown_btn").addEventListener("click", () => shutdown
 document.getElementById("notificationsEnabled").addEventListener("change", (event) => document.getElementById("pushbullet_wrapper").classList.toggle("hide"));
 document.getElementById("bfEnabled").addEventListener("change", (event) => document.getElementById("brewfather_wrapper").classList.toggle("hide"));
 document.getElementById("iftttEnabled").addEventListener("change", (event) => document.getElementById("ifttt_wrapper").classList.toggle("hide"));
+document.getElementById("ngrokEnabled").addEventListener("change", (event) => document.getElementById("ngrok_wrapper").classList.toggle("hide"));
 
 const customNameInputs = [];
 const customNames = [];
@@ -288,6 +269,7 @@ function refresh(gaugeChart, lineChart, chartDataTable, gaugeDataTable) {
     gaugeChart.draw(gaugeDataTable, gaugeOptions);
 
     document.getElementById("iftttState").innerHTML = jsonTemp.iftttState + " (avg " + jsonTemp.iftttTemp + "°C)";
+    document.getElementById("ngrokUrl").innerHTML = '<a href="' + jsonTemp.ngrokUrl + '" target="_blank">' + jsonTemp.ngrokUrl + "</a>";
   });
 }
 

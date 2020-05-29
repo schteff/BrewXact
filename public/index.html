@@ -168,6 +168,29 @@
               <span id="iftttState">UNKNOWN</span>
             </span>
           </li>
+          <li class="collection-header row valign-wrapper noMarginBottom">
+            <h5 class="col s6">Ngrok</h5>
+            <div class="switch col s6 right-align">
+              <label>
+                <input id="ngrokEnabled" type="checkbox" />
+                <span class="lever"></span>
+                <span>Enable ngrok</span>
+              </label>
+            </div>
+          </li>
+          <li id="ngrok_wrapper" class="collection-item">
+            <div class="collection-item">
+              <div class="input-field">
+                <input placeholder="????" id="ngrokAuthToken" type="text" />
+                <label for="ngrokAuthToken">ngrok auth token</label>
+              </div>
+            </div>
+            <span>
+              Found at
+              <a href="https://dashboard.ngrok.com/" target="_blank">https://dashboard.ngrok.com/</a>. Current state:
+              <span id="ngrokUrl">UNKNOWN</span>
+            </span>
+          </li>
         </ul>
       </div>
       <div class="section">

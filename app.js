@@ -42,13 +42,6 @@ const server = app.listen(port, () => console.log("Listening on port %d", server
  */
 bonjour.publish({ name: "BrewXact", type: "http", host: "brew", port: port });
 
-var localtunnelUrl = "not available";
-async function refreshNgrok() {
-  localtunnelUrl = await ngrok.connect(port);
-}
-refreshNgrok();
-setInterval(() => refreshNgrok(), 3600000); //One hour
-
 function saveDataFile() {
   jsonfile.writeFile(dataFile, dataFileArray, (err) => (err ? console.error(err) : null));
 }
@@ -67,8 +60,9 @@ jsonfile.readFile(dataFile, (err, obj) => {
 });
 
 function getTemps() {
-  const temps = sensor.readAllC();
+  const temps = sensor.readAllC(3, (e) => console.error(e));
   if (temps.length == 0) {
+    console.log("no temp sensors found", temps);
     //Mock values
     temps.push({ id: "foo1", t: 40 + new Date().getSeconds() });
     temps.push({ id: "foo2", t: 90 - new Date().getSeconds() });
@@ -81,13 +75,13 @@ function lastReading() {
 }
 
 function getDataFileArrayItem(temps) {
-  return { time: Date.now(), temps: temps ? temps : getTemps(), iftttState: lastIftttTempState, iftttTemp: lastAvgTemp };
+  return { time: Date.now(), temps: temps ? temps : getTemps(), iftttState: lastIftttTempState, iftttTemp: lastAvgTemp, ngrokUrl: localtunnelUrl };
 }
 
 /**
  * The loop reading and storing the temperature values to the file / array
  */
-var settings = {measuring: false, minTemp: 62, maxTemp: 67, logInterval: config.standardLogInterval };
+var settings = { measuring: false, minTemp: 62, maxTemp: 67, logInterval: config.standardLogInterval };
 var notificationSent = false;
 var logInterval = settings.logInterval;
 var logVar = setInterval(() => readTempAndCheck(), settings.logInterval);
@@ -96,7 +90,7 @@ var lastIftttTempStateChange = 0;
 var lastAvgTemp = -1;
 console.log("Starting logging with interval " + logInterval);
 function readTempAndCheck() {
-  if(!settings.measuring){
+  if (!settings.measuring) {
     return;
   }
   const temps = getTemps();
@@ -133,6 +127,13 @@ jsonfile.readFile(settingsFile, function (err, obj) {
     logVar = setInterval(() => readTempAndCheck(), settings.logInterval);
   }
 });
+
+var localtunnelUrl = "not available";
+async function refreshNgrok() {
+  localtunnelUrl = await ngrok.connect({ addr: port, authtoken: settings.ngrokAuthToken ? settings.ngrokAuthToken : null });
+}
+refreshNgrok();
+setInterval(() => refreshNgrok(), 3600000); //One hour
 
 function push(noteTitle, noteBody) {
   const pusher = new PushBullet(settings.pushBulletToken);
@@ -287,6 +288,8 @@ app.post("/saveSettings", (req, res) => {
         console.log("Restarting logging with interval " + logInterval);
         logVar = setInterval(() => readTempAndCheck(), settings.logInterval);
       }
+
+      refreshNgrok();
     }
   });
   notificationSent = false;
