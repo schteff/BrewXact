@@ -87,7 +87,7 @@ function getDataFileArrayItem(temps) {
 /**
  * The loop reading and storing the temperature values to the file / array
  */
-var settings = { minTemp: 62, maxTemp: 67, logInterval: config.standardLogInterval };
+var settings = {measuring: false, minTemp: 62, maxTemp: 67, logInterval: config.standardLogInterval };
 var notificationSent = false;
 var logInterval = settings.logInterval;
 var logVar = setInterval(() => readTempAndCheck(), settings.logInterval);
@@ -96,6 +96,9 @@ var lastIftttTempStateChange = 0;
 var lastAvgTemp = -1;
 console.log("Starting logging with interval " + logInterval);
 function readTempAndCheck() {
+  if(!settings.measuring){
+    return;
+  }
   const temps = getTemps();
   dataFileArray.push(getDataFileArrayItem(temps));
   saveDataFile();

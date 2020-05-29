@@ -93,6 +93,7 @@ function setGuiSettings(settings) {
   if (settings.iftttHighTempEventName) {
     document.getElementById("iftttHighTempEventName").value = settings.iftttHighTempEventName;
   }
+  document.getElementById("measuringEnabled").checked = settings.measuring;
 }
 
 function downloadChart(chart) {
@@ -127,8 +128,9 @@ function getGuiSettings() {
   const iftttWebhooksKey = document.getElementById("iftttWebhooksKey").value;
   const iftttLowTempEventName = document.getElementById("iftttLowTempEventName").value;
   const iftttHighTempEventName = document.getElementById("iftttHighTempEventName").value;
-
+  const measuring = document.getElementById("measuringEnabled").checked
   return {
+    measuring: measuring,
     minTemp: minTemp,
     maxTemp: maxTemp,
     logInterval: logInterval,
