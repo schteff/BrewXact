@@ -71,6 +71,7 @@ function setGuiSettings(settings) {
   if (settings.iftttHighTempEventName) document.getElementById("iftttHighTempEventName").value = settings.iftttHighTempEventName;
   if (settings.ngrokAuthToken) document.getElementById("ngrokAuthToken").value = settings.ngrokAuthToken;
   document.getElementById("ngrokEnabled").checked = settings.ngrokEnabled;
+  if (!settings.ngrokEnabled) document.getElementById("ngrok_wrapper").classList.add("hide");
   document.getElementById("measuringEnabled").checked = settings.measuring;
 }
 

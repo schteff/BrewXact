@@ -130,10 +130,18 @@ jsonfile.readFile(settingsFile, function (err, obj) {
 
 var localtunnelUrl = "not available";
 async function refreshNgrok() {
-  localtunnelUrl = await ngrok.connect({ addr: port, authtoken: settings.ngrokAuthToken ? settings.ngrokAuthToken : null });
+  if (settings.ngrokEnabled) {
+    if (localtunnelUrl.startsWith("htt")) {
+      await ngrok.disconnect(localtunnelUrl);
+    }
+    localtunnelUrl = await ngrok.connect({ addr: port, authtoken: settings.ngrokAuthToken ? settings.ngrokAuthToken : null });
+  } else {
+    await ngrok.disconnect(localtunnelUrl);
+    localtunnelUrl = "disconnected";
+  }
 }
 refreshNgrok();
-setInterval(() => refreshNgrok(), 3600000); //One hour
+setInterval(() => refreshNgrok(), 12 * 3600000); //12 hours
 
 function push(noteTitle, noteBody) {
   const pusher = new PushBullet(settings.pushBulletToken);
