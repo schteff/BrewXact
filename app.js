@@ -60,7 +60,7 @@ jsonfile.readFile(dataFile, (err, obj) => {
 });
 
 function getTemps() {
-  const temps = sensor.readAllC(3, (e) => console.error(e));
+  const temps = sensor.readAllC(3, (e) => console.error("read error", e));
   if (temps.length == 0) {
     console.log("no temp sensors found", temps);
     //Mock values
