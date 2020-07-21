@@ -62,11 +62,11 @@ jsonfile.readFile(dataFile, (err, obj) => {
 function getTemps() {
   const temps = sensor.readAllC(2);
   if (temps.length == 0) {
-    console.log("no temp sensors found", temps);
     //Mock values
     temps.push({ id: "foo1", t: 40 + new Date().getSeconds() });
     temps.push({ id: "foo2", t: 90 - new Date().getSeconds() });
     temps.push({ id: "foo3", t: 22 });
+    //console.log("no temp sensors found, using mock sensors", temps);
   }
   return temps;
 }
@@ -76,19 +76,19 @@ function lastReading() {
 }
 
 function getDataFileArrayItem(temps) {
-  return { time: Date.now(), temps: temps ? temps : getTemps(), iftttState: lastIftttTempState, iftttTemp: lastAvgTemp, ngrokUrl: localtunnelUrl };
+  return { time: Date.now(), temps: temps ? temps : getTemps(), iftttState: lastIftttTempState, iftttTemp: lastIftttBeerTemp, ngrokUrl: localtunnelUrl };
 }
 
 /**
  * The loop reading and storing the temperature values to the file / array
  */
-var settings = { measuring: false, minTemp: 62, maxTemp: 67, logInterval: config.standardLogInterval };
+var settings = { measuring: false, minTemp: 62, maxTemp: 67, minFridgeTemp: 10, maxFridgeTemp: 30, logInterval: config.standardLogInterval };
 var notificationSent = false;
 var logInterval = settings.logInterval;
 var logVar = setInterval(() => readTempAndCheck(), settings.logInterval);
 var lastIftttTempState = "unknown";
 var lastIftttTempStateChange = 0;
-var lastAvgTemp = -1;
+var lastIftttBeerTemp = -1;
 console.log("Starting logging with interval " + logInterval);
 function readTempAndCheck() {
   if (!settings.measuring) {
@@ -162,54 +162,121 @@ function push(noteTitle, noteBody) {
   });
 }
 
+/**
+ * TEMP CONTROLLER
+ *
+ */
 setInterval(() => tempController(), 5000);
 function tempController() {
   if (settings.iftttEnabled && settings.iftttWebhooksKey) {
     const temps = getTemps();
-    const avgTemp = getAvgBeerTemp(temps);
-    if (avgTemp === -100) {
-      console.log("No temp found, doing nothing...");
+    const beerTemp = getAvgBeerTemp(temps);
+    const fridgeTemp = getAvgFridgeTemp(temps);
+    const roomTemp = getAvgRoomTemp(temps);
+    if (beerTemp === -100) {
+      console.log("No beer temp found, doing nothing...");
       if (settings.notify && settings.pushBulletToken) {
         push("No temperature detected!", "Could not find any sensors!");
       }
       return;
     }
-    lastAvgTemp = avgTemp + 0;
+    lastIftttBeerTemp = beerTemp + 0;
     const targetTemp = (settings.minTemp + settings.maxTemp) / 2;
-    const belowMin = avgTemp < settings.minTemp + 0;
-    const aboveMax = avgTemp > settings.maxTemp + 0;
-    const aboveTarget = avgTemp > targetTemp + 0.1;
-    const belowTarget = avgTemp < targetTemp - 0.1;
+    const belowBeerMin = beerTemp < settings.minTemp + 0;
+    const aboveBeerMax = beerTemp > settings.maxTemp + 0;
     const isHeating = lastIftttTempState === "heating";
     const isCooling = lastIftttTempState === "cooling";
-    const lastChangeWasLongAgo = Date.now() - lastIftttTempStateChange > 15 * 60 * 1000;
-    if (aboveTarget && isHeating) {
-      iftttCool(avgTemp, targetTemp); //Cool because just went above target
-    } else if (belowTarget && isCooling) {
-      iftttHeat(avgTemp, targetTemp); //Heat because just went below target
-    } else if (belowMin && (!isHeating || lastChangeWasLongAgo)) {
-      iftttHeat(avgTemp, targetTemp); //Heat because below min
-    } else if (aboveMax && (!isCooling || lastChangeWasLongAgo)) {
-      iftttCool(avgTemp, targetTemp); //Cool because above max
+    const isResting = lastIftttTempState === "resting";
+    const lastChangeWasHalfHourAgo = Date.now() - lastIftttTempStateChange > 30 * 60 * 1000;
+    const lastChangeWasHourAgo = Date.now() - lastIftttTempStateChange > 60 * 60 * 1000;
+
+    //Check fridge limits
+    var belowFridgeMin = false;
+    var aboveFridgeMax = false;
+    if (fridgeTemp !== -100 && settings.minFridgeTemp && settings.maxFridgeTemp) {
+      belowFridgeMin = fridgeTemp < settings.minFridgeTemp + 0;
+      aboveFridgeMax = fridgeTemp > settings.maxFridgeTemp + 0;
+    }
+
+    //Check room temp
+    var roomHotterThanFridge = false;
+    var roomColderThanFridge = false;
+    if (roomTemp !== -100 && fridgeTemp !== -100) {
+      roomHotterThanFridge = roomTemp > fridgeTemp;
+      roomColderThanFridge = roomTemp < fridgeTemp;
+    }
+
+    if (belowFridgeMin || belowBeerMin) {
+      //Should heat
+      if (isCooling) {
+        iftttHeat(beerTemp, targetTemp);
+        return;
+      } else if (isHeating) {
+        if (lastChangeWasHalfHourAgo) {
+          iftttHeat(beerTemp, targetTemp); //Heat again because long ago last change
+          return;
+        }
+      } else {
+        //Resting
+        if (!roomHotterThanFridge) {
+          // in cold room
+          iftttHeat(beerTemp, targetTemp); //Heat because room colder than fridge
+          return;
+        } else {
+          if (lastChangeWasHourAgo) {
+            iftttHeat(beerTemp, targetTemp); //Heat because long ago change
+            return;
+          } else {
+            iftttRest(beerTemp, targetTemp); //Rest because room hotter than fridge
+            return;
+          }
+        }
+      }
+    } else if (aboveFridgeMax || aboveBeerMax) {
+      //Should cool
+      if (isHeating) {
+        iftttCool(beerTemp, targetTemp);
+        return;
+      } else if (isCooling) {
+        if (lastChangeWasHalfHourAgo) {
+          iftttCool(beerTemp, targetTemp); //Cool again because long ago last change
+          return;
+        }
+      } else {
+        //Resting
+        if (!roomColderThanFridge) {
+          // in hot room
+          iftttCool(beerTemp, targetTemp); //Cool because room hotter than fridge
+          return;
+        } else {
+          if (lastChangeWasHourAgo) {
+            iftttCool(beerTemp, targetTemp); //Cool because long ago change
+            return;
+          } else {
+            iftttRest(beerTemp, targetTemp); //Rest because room colder than fridge
+            return;
+          }
+        }
+      }
+    } else if (!isResting) {
+      iftttRest(beerTemp, targetTemp); //Rest because all is fine
+      return;
     }
   }
 }
 
 function getAvgBeerTemp(temps) {
-  const beerTemps = temps.filter((t) => settings.tempTypes[t.id] !== "room");
-  const sum = beerTemps.map((t) => (t.t ? t.t : 0)).reduce((acc, cur) => (cur += acc));
-  const count = beerTemps.filter((t) => t.t).length;
-  if (count === 0) {
-    return -100;
-  }
-  const avgTemp = sum / count;
-  return Math.round((avgTemp + Number.EPSILON) * 100) / 100;
+  const beerTemps = temps.filter((t) => !settings.tempTypes[t.id] || settings.tempTypes[t.id] === "beer");
+  return getAvgTemp(beerTemps);
 }
 
 function getAvgRoomTemp(temps) {
   const roomTemps = temps.filter((t) => settings.tempTypes[t.id] === "room");
-  const sum = roomTemps.map((t) => (t.t ? t.t : 0)).reduce((acc, cur) => (cur += acc));
-  const count = roomTemps.filter((t) => t.t).length;
+  return getAvgTemp(roomTemps);
+}
+function getAvgTemp(temps) {
+  const sum = temps.map((t) => (t.t ? t.t : 0)).reduce((acc, cur) => (cur += acc));
+  const count = temps.filter((t) => t.t).length;
   if (count === 0) {
     return -100;
   }
@@ -217,17 +284,29 @@ function getAvgRoomTemp(temps) {
   return Math.round((avgTemp + Number.EPSILON) * 100) / 100;
 }
 
-async function iftttHeat(avgTemp, targetTemp) {
-  const res = await siftttwebhooks.sendRequest(settings.iftttLowTempEventName, settings.iftttWebhooksKey, { value1: avgTemp });
-  console.log("IFTTT Heating. avgTemp: " + avgTemp + " targetTemp: " + targetTemp + " lastState: " + lastIftttTempState + " newState: heating");
+function getAvgFridgeTemp(temps) {
+  const fridgeTemps = temps.filter((t) => settings.tempTypes[t.id] === "fridge");
+  return getAvgTemp(fridgeTemps);
+}
+
+async function iftttHeat(beerTemp, targetTemp) {
+  const res = await siftttwebhooks.sendRequest(settings.iftttLowTempEventName, settings.iftttWebhooksKey, { value1: beerTemp });
+  console.log("IFTTT Heating. avgTemp: " + beerTemp + " targetTemp: " + targetTemp + " prevState: " + lastIftttTempState);
   lastIftttTempState = "heating";
   lastIftttTempStateChange = Date.now();
 }
 
-async function iftttCool(avgTemp, targetTemp) {
-  const res = await siftttwebhooks.sendRequest(settings.iftttHighTempEventName, settings.iftttWebhooksKey, { value1: avgTemp });
-  console.log("IFTTT Cooling. avgTemp: " + avgTemp + " targetTemp: " + targetTemp + " lastState: " + lastIftttTempState + " newState: cooling");
+async function iftttCool(beerTemp, targetTemp) {
+  const res = await siftttwebhooks.sendRequest(settings.iftttHighTempEventName, settings.iftttWebhooksKey, { value1: beerTemp });
+  console.log("IFTTT Cooling. avgTemp: " + beerTemp + " targetTemp: " + targetTemp + " prevState: " + lastIftttTempState);
   lastIftttTempState = "cooling";
+  lastIftttTempStateChange = Date.now();
+}
+
+async function iftttRest(beerTemp, targetTemp) {
+  const res = await siftttwebhooks.sendRequest(settings.iftttRestEventName, settings.iftttWebhooksKey, { value1: beerTemp });
+  console.log("IFTTT Resting. avgTemp: " + beerTemp + " targetTemp: " + targetTemp + " prevState: " + lastIftttTempState);
+  lastIftttTempState = "resting";
   lastIftttTempStateChange = Date.now();
 }
 
@@ -240,6 +319,7 @@ function trySendLastReadingToBrewfather() {
     const temps = getTemps();
     const avgBeerTemp = getAvgBeerTemp(temps);
     const avgRoomTemp = getAvgRoomTemp(temps);
+    const avgFridgeTemp = getAvgFridgeTemp(temps);
     Object.entries(settings.customNames).forEach((key, value) => {
       const sensor = key[0];
       const tempType = settings.tempTypes[sensor];
@@ -253,7 +333,7 @@ function trySendLastReadingToBrewfather() {
         temp: temp,
         temp_unit: "C", // C, F, K
         beer: name,
-        aux_temp: avgBeerTemp,
+        aux_temp: avgFridgeTemp,
         ext_temp: avgRoomTemp,
         comment:
           "Temperature reading. " +
@@ -261,7 +341,11 @@ function trySendLastReadingToBrewfather() {
           " since " +
           (lastIftttTempStateChange ? new Date(lastIftttTempStateChange).toLocaleTimeString() : "?") +
           " sensor: " +
-          sensor,
+          sensor +
+          "-" +
+          name +
+          " avgBeerTemp: " +
+          avgBeerTemp,
       };
 
       request.post(settings.brewfatherStreamUrl, { json: brewfatherData }, (error, response, body) => {

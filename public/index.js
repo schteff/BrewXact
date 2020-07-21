@@ -59,23 +59,28 @@ const tempTypes = {};
 function setGuiSettings(settings) {
   if (settings.minTemp) document.getElementById("minTemp").value = settings.minTemp;
   if (settings.maxTemp) document.getElementById("maxTemp").value = settings.maxTemp;
+  if (settings.minFridgeTemp) document.getElementById("minFridgeTemp").value = settings.minFridgeTemp;
+  if (settings.maxFridgeTemp) document.getElementById("maxFridgeTemp").value = settings.maxFridgeTemp;
   if (settings.logInterval) document.getElementById("logInterval").value = settings.logInterval / 1000;
   if (settings.pushBulletToken) document.getElementById("pushBulletToken").value = settings.pushBulletToken;
-  if (settings.customNames) Object.entries(settings.customNames).forEach((key, value) => (customNames[key[0]] = key[1]));
-  if (settings.tempTypes) Object.entries(settings.tempTypes).forEach((key, value) => (tempTypes[key[0]] = key[1]));
   if (settings.brewfatherStreamUrl) document.getElementById("brewfatherUrl").value = settings.brewfatherStreamUrl;
-  document.getElementById("bfEnabled").checked = settings.logToBrewfather;
-  if (!settings.logToBrewfather) document.getElementById("brewfather_wrapper").classList.add("hide");
-  document.getElementById("notificationsEnabled").checked = settings.notify;
-  if (!settings.notify) document.getElementById("pushbullet_wrapper").classList.add("hide");
-  document.getElementById("iftttEnabled").checked = settings.iftttEnabled;
-  if (!settings.iftttEnabled) document.getElementById("ifttt_wrapper").classList.add("hide");
   if (settings.iftttWebhooksKey) document.getElementById("iftttWebhooksKey").value = settings.iftttWebhooksKey;
   if (settings.iftttLowTempEventName) document.getElementById("iftttLowTempEventName").value = settings.iftttLowTempEventName;
   if (settings.iftttHighTempEventName) document.getElementById("iftttHighTempEventName").value = settings.iftttHighTempEventName;
   if (settings.ngrokAuthToken) document.getElementById("ngrokAuthToken").value = settings.ngrokAuthToken;
-  document.getElementById("ngrokEnabled").checked = settings.ngrokEnabled;
+
+  if (settings.customNames) Object.entries(settings.customNames).forEach((key, value) => (customNames[key[0]] = key[1]));
+  if (settings.tempTypes) Object.entries(settings.tempTypes).forEach((key, value) => (tempTypes[key[0]] = key[1]));
+
+  if (!settings.logToBrewfather) document.getElementById("brewfather_wrapper").classList.add("hide");
+  if (!settings.notify) document.getElementById("pushbullet_wrapper").classList.add("hide");
+  if (!settings.iftttEnabled) document.getElementById("ifttt_wrapper").classList.add("hide");
   if (!settings.ngrokEnabled) document.getElementById("ngrok_wrapper").classList.add("hide");
+
+  document.getElementById("bfEnabled").checked = settings.logToBrewfather;
+  document.getElementById("notificationsEnabled").checked = settings.notify;
+  document.getElementById("iftttEnabled").checked = settings.iftttEnabled;
+  document.getElementById("ngrokEnabled").checked = settings.ngrokEnabled;
   document.getElementById("measuringEnabled").checked = settings.measuring;
 }
 
@@ -99,13 +104,19 @@ function downloadData() {
 function getGuiSettings() {
   const minTemp = Number(document.getElementById("minTemp").value);
   const maxTemp = Number(document.getElementById("maxTemp").value);
+  const minFridgeTemp = Number(document.getElementById("minFridgeTemp").value);
+  const maxFridgeTemp = Number(document.getElementById("maxFridgeTemp").value);
   const logInterval = Number(document.getElementById("logInterval").value) * 1000;
   const customNames = {};
   customNameInputs.forEach((input) => (customNames[input.id.replace("_name", "")] = input.value));
   const tempTypes = {};
   customNameInputs.forEach((input) => {
     const sensorName = input.id.replace("_name", "");
-    tempTypes[sensorName] = document.getElementById(sensorName + "_roomtemp").checked ? "room" : "beer";
+    tempTypes[sensorName] = document.getElementById(sensorName + "_roomtemp").checked
+      ? "room"
+      : document.getElementById(sensorName + "_fridgetemp").checked
+      ? "fridge"
+      : "beer";
   });
   const notify = document.getElementById("notificationsEnabled").checked;
   const pushBulletToken = document.getElementById("pushBulletToken").value;
@@ -122,6 +133,8 @@ function getGuiSettings() {
     measuring: measuring,
     minTemp: minTemp,
     maxTemp: maxTemp,
+    minFridgeTemp: minFridgeTemp,
+    maxFridgeTemp: maxFridgeTemp,
     logInterval: logInterval,
     customNames: customNames,
     tempTypes: tempTypes,
@@ -227,39 +240,14 @@ function start(firstTemps) {
     sensorsNamesWrapper.append(sensorWrapper);
 
     const tempType = tempTypes[sensor.id + ""];
-
-    const sensorRoomTempRadioId = sensor.id + "_roomtemp";
-    const roomRadioInput = document.createElement("INPUT");
-    roomRadioInput.setAttribute("id", sensorRoomTempRadioId);
-    roomRadioInput.setAttribute("type", "radio");
-    roomRadioInput.setAttribute("name", sensor.id + "_group");
-    roomRadioInput.checked = tempType === "room";
-    const roomRadioLabel = document.createElement("LABEL");
-    roomRadioLabel.setAttribute("for", sensorRoomTempRadioId);
-    roomRadioLabel.append("Room temp");
-
-    const roomRadioP = document.createElement("P");
-    roomRadioP.append(roomRadioInput);
-    roomRadioP.append(roomRadioLabel);
-
-    const sensorBeerSwitchId = sensor.id + "_beertemp";
-    const beerRadioInput = document.createElement("INPUT");
-    beerRadioInput.setAttribute("id", sensorBeerSwitchId);
-    beerRadioInput.setAttribute("type", "radio");
-    beerRadioInput.setAttribute("name", sensor.id + "_group");
-    beerRadioInput.checked = tempType !== "room";
-    const beerRadioLabel = document.createElement("LABEL");
-    beerRadioLabel.setAttribute("for", sensorBeerSwitchId);
-    beerRadioLabel.append("Beer temp");
-
-    const beerRadioP = document.createElement("P");
-    beerRadioP.append(beerRadioInput);
-    beerRadioP.append(beerRadioLabel);
-
+    const beerRadioP = createTempSelector(sensor, tempType, "beer");
+    const roomRadioP = createTempSelector(sensor, tempType, "room");
+    const fridgeRadioP = createTempSelector(sensor, tempType, "fridge");
     const radioWrapper = document.createElement("DIV");
     radioWrapper.setAttribute("class", "switch col s4");
     radioWrapper.append(beerRadioP);
     radioWrapper.append(roomRadioP);
+    radioWrapper.append(fridgeRadioP);
 
     sensorsRadiosWrapper.append(radioWrapper);
 
@@ -274,13 +262,33 @@ function start(firstTemps) {
   setInterval(() => refresh(gaugeChart, lineChart, chartDataTable, gaugeDataTable), refreshInterval);
 }
 
+function createTempSelector(sensor, tempType, type) {
+  const sensorTempRadioId = sensor.id + "_" + type + "temp";
+  const radioInput = document.createElement("INPUT");
+  radioInput.setAttribute("id", sensorTempRadioId);
+  radioInput.setAttribute("type", "radio");
+  radioInput.setAttribute("name", sensor.id + "_group");
+  radioInput.checked = tempType === type;
+  const radioLabel = document.createElement("LABEL");
+  radioLabel.setAttribute("for", sensorTempRadioId);
+  radioLabel.append(type + " temp");
+
+  const radioP = document.createElement("P");
+  radioP.append(radioInput);
+  radioP.append(radioLabel);
+
+  return radioP;
+}
+
 function toRowArrays(firstTemps) {
   const initSettings = getGuiSettings();
   return firstTemps.map((obj) => toRowArray(obj, initSettings));
 }
 function toRowArray(obj, settings) {
-  const rowArray = [new Date(obj.time), settings.minTemp, settings.maxTemp];
+  const rowArray = [new Date(obj.time)];
   obj.temps.forEach((tempObj) => rowArray.push(tempObj.t));
+  rowArray.push(settings.minTemp);
+  rowArray.push(settings.maxTemp);
   return rowArray;
 }
 
@@ -289,12 +297,10 @@ function refresh(gaugeChart, lineChart, chartDataTable, gaugeDataTable) {
     const settings = getGuiSettings();
     chartDataTable.addRow(toRowArray(jsonTemp, settings));
 
-    chartDataTable.setColumnLabel(1, "Min " + settings.minTemp + "°C");
-    chartDataTable.setColumnLabel(2, "Max " + settings.maxTemp + "°C");
     for (var i = 0; i < jsonTemp.temps.length; i++) {
       //Update column label names (could have changed)
       const customName = document.getElementById(jsonTemp.temps[i].id + "_name").value;
-      chartDataTable.setColumnLabel(i + 3, customName);
+      chartDataTable.setColumnLabel(i + 1, customName);
 
       //Beep
       const currentTemp = jsonTemp.temps[i].t;
@@ -306,6 +312,9 @@ function refresh(gaugeChart, lineChart, chartDataTable, gaugeDataTable) {
       gaugeDataTable.setValue(i, 0, customName);
       gaugeDataTable.setValue(i, 1, currentTemp);
     }
+
+    chartDataTable.setColumnLabel(jsonTemp.temps.length + 1, "Min " + settings.minTemp + "°C");
+    chartDataTable.setColumnLabel(jsonTemp.temps.length + 2, "Max " + settings.maxTemp + "°C");
 
     lineChart.draw(chartDataTable, chartOptions);
     gaugeOptions = {
