@@ -67,6 +67,7 @@ function setGuiSettings(settings) {
   if (settings.iftttWebhooksKey) document.getElementById("iftttWebhooksKey").value = settings.iftttWebhooksKey;
   if (settings.iftttLowTempEventName) document.getElementById("iftttLowTempEventName").value = settings.iftttLowTempEventName;
   if (settings.iftttHighTempEventName) document.getElementById("iftttHighTempEventName").value = settings.iftttHighTempEventName;
+  if (settings.iftttRestEventName) document.getElementById("iftttRestEventName").value = settings.iftttRestEventName;
   if (settings.ngrokAuthToken) document.getElementById("ngrokAuthToken").value = settings.ngrokAuthToken;
 
   if (settings.customNames) Object.entries(settings.customNames).forEach((key, value) => (customNames[key[0]] = key[1]));
@@ -126,6 +127,7 @@ function getGuiSettings() {
   const iftttWebhooksKey = document.getElementById("iftttWebhooksKey").value;
   const iftttLowTempEventName = document.getElementById("iftttLowTempEventName").value;
   const iftttHighTempEventName = document.getElementById("iftttHighTempEventName").value;
+  const iftttRestEventName = document.getElementById("iftttRestEventName").value;
   const measuring = document.getElementById("measuringEnabled").checked;
   const ngrokEnabled = document.getElementById("ngrokEnabled").checked;
   const ngrokAuthToken = document.getElementById("ngrokAuthToken").value;
@@ -146,6 +148,7 @@ function getGuiSettings() {
     iftttWebhooksKey: iftttWebhooksKey,
     iftttLowTempEventName: iftttLowTempEventName,
     iftttHighTempEventName: iftttHighTempEventName,
+    iftttRestEventName: iftttRestEventName,
     ngrokAuthToken: ngrokAuthToken,
     ngrokEnabled: ngrokEnabled,
   };
