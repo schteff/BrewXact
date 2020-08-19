@@ -333,8 +333,8 @@ function trySendLastReadingToBrewfather() {
         temp: temp,
         temp_unit: "C", // C, F, K
         beer: name,
-        aux_temp: avgFridgeTemp,
-        ext_temp: avgRoomTemp,
+        aux_temp: avgFridgeTemp === -100 ? null : avgFridgeTemp,
+        ext_temp: avgRoomTemp === -100 ? null : avgRoomTemp,
         comment:
           "Temperature reading. " +
           lastIftttTempState +
