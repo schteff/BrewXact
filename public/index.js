@@ -51,7 +51,7 @@ function shutdownDevice() {
   fetch("/shutdown", other_params);
 }
 
-const refreshInterval = 6000;
+const refreshInterval = 12000;
 
 const customNames = {};
 const tempTypes = {};
