@@ -275,7 +275,7 @@ function getAvgRoomTemp(temps) {
   return getAvgTemp(roomTemps);
 }
 function getAvgTemp(temps) {
-  const sum = temps.map((t) => (t.t ? t.t : 0)).reduce((acc, cur) => (cur += acc));
+  const sum = temps.map((t) => (t.t ? t.t : 0)).reduce((acc, cur) => (cur += acc), 0);
   const count = temps.filter((t) => t.t).length;
   if (count === 0) {
     return -100;
