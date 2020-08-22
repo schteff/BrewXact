@@ -16,6 +16,15 @@ function fetchSettings(callback) {
     .then((json) => callback(json));
 }
 
+function fetchLog() {
+  fetch("/getLog")
+    .then((response) => response.text())
+    .then((text) => {
+      document.getElementById("logArea").value = text + "";
+      $("#logArea").trigger("autoresize");
+    });
+}
+
 function saveSettings(settings) {
   const other_params = {
     headers: { "content-type": "application/json; charset=UTF-8" },
@@ -157,6 +166,7 @@ function getGuiSettings() {
 fetchSettings((settings) => setGuiSettings(settings));
 
 document.getElementById("save_btn").addEventListener("click", () => saveSettings(getGuiSettings()));
+document.getElementById("get_log_btn").addEventListener("click", () => fetchLog());
 document.getElementById("update_btn").addEventListener("click", () => updateApp());
 document.getElementById("reboot_btn").addEventListener("click", () => rebootDevice());
 document.getElementById("shutdown_btn").addEventListener("click", () => shutdownDevice());
@@ -290,6 +300,9 @@ function toRowArrays(firstTemps) {
 function toRowArray(obj, settings) {
   const rowArray = [new Date(obj.time)];
   obj.temps.forEach((tempObj) => rowArray.push(tempObj.t));
+  while (Object.entries(settings.customNames).length > rowArray.length + 1) {
+    rowArray.push(null);
+  }
   rowArray.push(settings.minTemp);
   rowArray.push(settings.maxTemp);
   return rowArray;

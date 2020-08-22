@@ -14,6 +14,40 @@ const config = require("./config/config.js"), // import config variables
   app = express(), // create the server using express
   path = require("path"); // utility module
 
+/**
+ * Log to file also
+ */
+const fs = require("fs");
+const util = require("util");
+const logFile = fs.createWriteStream("../log.txt", { flags: "w" });
+const logStdout = process.stdout;
+console.log = function () {
+  logFile.write(getFormattedDate() + " " + util.format.apply(null, arguments) + "\n");
+  logStdout.write(getFormattedDate() + " " + util.format.apply(null, arguments) + "\n");
+};
+console.error = console.log;
+
+function getFormattedDate() {
+  var d = new Date();
+  return (
+    d.getFullYear() +
+    "-" +
+    ("0" + (d.getMonth() + 1)).slice(-2) +
+    "-" +
+    ("0" + d.getDate()).slice(-2) +
+    " " +
+    ("0" + d.getHours()).slice(-2) +
+    ":" +
+    ("0" + d.getMinutes()).slice(-2) +
+    ":" +
+    ("0" + d.getSeconds()).slice(-2)
+  );
+}
+
+function getLog() {
+  return fs.readFileSync("../log.txt", "utf8");
+}
+
 // Create shutdown function
 function shutdown(callback) {
   exec("shutdown now", (error, stdout, stderr) => {
@@ -100,8 +134,9 @@ function readTempAndCheck() {
 
   //Check if outside min/max
   if (settings.notify && settings.pushBulletToken) {
-    const tooColdTemps = temps.filter((t) => t.t < settings.minTemp);
-    const tooWarmTemps = temps.filter((t) => t.t > settings.maxTemp);
+    const beerTemp = getAvgBeerTemp(temps);
+    const tooColdTemps = beerTemp.filter((t) => t.t < settings.minTemp);
+    const tooWarmTemps = beerTemp.filter((t) => t.t > settings.maxTemp);
     const outsideRange = tooColdTemps.length > 0 || tooWarmTemps.length > 0;
     if (outsideRange && !notificationSent) {
       const hotOrCold = tooColdTemps.length === 0 ? "warm" : "cold";
@@ -114,6 +149,9 @@ function readTempAndCheck() {
   }
 }
 
+/**
+ * NGROK
+ */
 var localtunnelUrl = "not available";
 async function refreshNgrok() {
   console.log("ngrok enabled: " + settings.ngrokEnabled);
@@ -166,7 +204,7 @@ function push(noteTitle, noteBody) {
  * TEMP CONTROLLER
  *
  */
-setInterval(() => tempController(), 5000);
+setInterval(() => tempController(), 10000);
 function tempController() {
   if (settings.iftttEnabled && settings.iftttWebhooksKey) {
     const temps = getTemps();
@@ -448,3 +486,4 @@ app.post("/update", (req, res) => {
     }
   });
 });
+app.get("/getLog", (req, res) => res.send(getLog()));
