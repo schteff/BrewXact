@@ -365,7 +365,9 @@ function trySendLastReadingToBrewfather() {
         return;
       }
       const name = key[1];
-      const temp = temps.filter((t) => t.id === sensor)[0].t;
+      const arr = temps.filter((t) => t.id === sensor)[0];
+if(arr && arr.t){
+      const temp = arr.t;
       const brewfatherData = {
         name: sensor + name,
         temp: temp,
@@ -393,6 +395,7 @@ function trySendLastReadingToBrewfather() {
           console.error(error);
         }
       });
+}
     });
   }
 }
