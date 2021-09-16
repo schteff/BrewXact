@@ -227,9 +227,11 @@ function start(firstTemps) {
 
   const sensorsNamesWrapper = document.getElementById("sensor_names");
   const sensorsRadiosWrapper = document.getElementById("sensor_room_switches");
-  firstTemps[firstTemps.length - 1].temps.forEach((sensor) => {
-    chartDataTable.addColumn("number", sensor.id);
-    const sensorNameInputId = sensor.id + "_name";
+  const sensorIds = [...new Set(firstTemps.flatMap((t) => t.temps).map((t) => t.id))];
+
+  sensorIds.forEach((sensorId) => {
+    chartDataTable.addColumn("number", sensorId);
+    const sensorNameInputId = sensorId + "_name";
 
     // -----
     const sensorWrapper = document.createElement("DIV");
@@ -240,22 +242,22 @@ function start(firstTemps) {
     sensorNameInput.setAttribute("type", "text");
     customNameInputs.push(sensorNameInput);
     const index = customNameInputs.indexOf(sensorNameInput);
-    const name = customNames[sensor.id + ""];
+    const name = customNames[sensorId + ""];
     sensorNameInput.setAttribute("value", name ? name : "Mätare " + (index + 1));
     sensorWrapper.append(sensorNameInput);
 
     const sensorNameLabel = document.createElement("LABEL");
     sensorNameLabel.setAttribute("for", sensorNameInputId);
     sensorNameLabel.setAttribute("class", "active");
-    sensorNameLabel.append(sensor.id + "");
+    sensorNameLabel.append(sensorId + "");
     sensorWrapper.append(sensorNameLabel);
 
     sensorsNamesWrapper.append(sensorWrapper);
 
-    const tempType = tempTypes[sensor.id + ""];
-    const beerRadioP = createTempSelector(sensor, tempType, "beer");
-    const roomRadioP = createTempSelector(sensor, tempType, "room");
-    const fridgeRadioP = createTempSelector(sensor, tempType, "fridge");
+    const tempType = tempTypes[sensorId + ""];
+    const beerRadioP = createTempSelector(sensorId, tempType, "beer");
+    const roomRadioP = createTempSelector(sensorId, tempType, "room");
+    const fridgeRadioP = createTempSelector(sensorId, tempType, "fridge");
     const radioWrapper = document.createElement("DIV");
     radioWrapper.setAttribute("class", "switch col s4");
     radioWrapper.append(beerRadioP);
@@ -266,28 +268,32 @@ function start(firstTemps) {
 
     // -----
 
-    gaugeDataTable.addRow([sensor.id, sensor.t]);
+    // gaugeDataTable.addRow([sensorId, sensor.t]);
   });
 
-  toRowArrays(firstTemps).forEach((rowArray) => chartDataTable.addRow(rowArray));
+  const rowArrays = toRowArrays(firstTemps);
+  rowArrays.forEach((rowArray) => chartDataTable.addRow(rowArray));
 
   refresh(gaugeChart, lineChart, chartDataTable, gaugeDataTable);
   setInterval(() => refresh(gaugeChart, lineChart, chartDataTable, gaugeDataTable), refreshInterval);
 }
 
-function createTempSelector(sensor, tempType, type) {
-  const sensorTempRadioId = sensor.id + "_" + type + "temp";
+function createTempSelector(sensorId, tempType, type) {
+  const sensorTempRadioId = sensorId + "_" + type + "temp";
   const radioInput = document.createElement("INPUT");
   radioInput.setAttribute("id", sensorTempRadioId);
   radioInput.setAttribute("type", "radio");
-  radioInput.setAttribute("name", sensor.id + "_group");
+  radioInput.setAttribute("name", sensorId + "_group");
   radioInput.checked = tempType === type;
+
+  const radioSpan = document.createElement("SPAN");
+  radioSpan.append(type + " temp");
+
   const radioLabel = document.createElement("LABEL");
-  radioLabel.setAttribute("for", sensorTempRadioId);
-  radioLabel.append(type + " temp");
+  radioLabel.append(radioInput);
+  radioLabel.append(radioSpan);
 
   const radioP = document.createElement("P");
-  radioP.append(radioInput);
   radioP.append(radioLabel);
 
   return radioP;
@@ -301,7 +307,7 @@ function toRowArray(obj, settings) {
   const rowArray = [new Date(obj.time)];
   obj.temps.forEach((tempObj) => rowArray.push(tempObj.t));
   while (Object.entries(settings.customNames).length > rowArray.length + 1) {
-    rowArray.push(null);
+    rowArray.push(0);
   }
   rowArray.push(settings.minTemp);
   rowArray.push(settings.maxTemp);
