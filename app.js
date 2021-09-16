@@ -355,6 +355,9 @@ async function iftttRest(beerTemp, targetTemp) {
 function trySendLastReadingToBrewfather() {
   if (settings.logToBrewfather && settings.brewfatherStreamUrl) {
     const temps = getTemps();
+    if(!temps || temps.length === 0){
+      return;
+    }
     const avgBeerTemp = getAvgBeerTemp(temps);
     const avgRoomTemp = getAvgRoomTemp(temps);
     const avgFridgeTemp = getAvgFridgeTemp(temps);
@@ -366,36 +369,36 @@ function trySendLastReadingToBrewfather() {
       }
       const name = key[1];
       const arr = temps.filter((t) => t.id === sensor)[0];
-if(arr && arr.t){
-      const temp = arr.t;
-      const brewfatherData = {
-        name: sensor + name,
-        temp: temp,
-        temp_unit: "C", // C, F, K
-        beer: name,
-        aux_temp: avgFridgeTemp === -100 ? null : avgFridgeTemp,
-        ext_temp: avgRoomTemp === -100 ? null : avgRoomTemp,
-        comment:
-          "Temperature reading. " +
-          lastIftttTempState +
-          " since " +
-          (lastIftttTempStateChange ? new Date(lastIftttTempStateChange).toLocaleTimeString() : "?") +
-          " sensor: " +
-          sensor +
-          "-" +
-          name +
-          " avgBeerTemp: " +
-          avgBeerTemp,
-      };
+      if(arr && arr.t){
+        const temp = arr.t;
+        const brewfatherData = {
+          name: sensor + name,
+          temp: temp,
+          temp_unit: "C", // C, F, K
+          beer: name,
+          aux_temp: avgFridgeTemp === -100 ? null : avgFridgeTemp,
+          ext_temp: avgRoomTemp === -100 ? null : avgRoomTemp,
+          comment:
+            "Temperature reading. " +
+            lastIftttTempState +
+            " since " +
+            (lastIftttTempStateChange ? new Date(lastIftttTempStateChange).toLocaleTimeString() : "?") +
+            " sensor: " +
+            sensor +
+            "-" +
+            name +
+            " avgBeerTemp: " +
+            avgBeerTemp,
+        };
 
-      request.post(settings.brewfatherStreamUrl, { json: brewfatherData }, (error, response, body) => {
-        if (!error && response.statusCode == 200) {
-          console.log("Successful logged temp sensor " + sensor + " " + name + " to brewfather");
-        } else if (error) {
-          console.error(error);
-        }
-      });
-}
+        request.post(settings.brewfatherStreamUrl, { json: brewfatherData }, (error, response, body) => {
+          if (!error && response.statusCode == 200) {
+            console.log("Successful logged temp sensor " + sensor + " " + name + " to brewfather");
+          } else if (error) {
+            console.error(error);
+          }
+        });
+      }
     });
   }
 }
