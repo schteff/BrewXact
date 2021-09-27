@@ -110,8 +110,10 @@ function getTemps() {
   const filtered = temps
     .filter((item) => item.t !== 85)
     .map((item) => {
-      if (item.t && settings.tempOffsets && settings.tempOffsets[t.id] && !isNaN(settings.tempOffsets[t.id])) {
-        item.t += settings.tempOffsets[t.id];
+      const id = item.id;
+      const offset = settings.tempOffsets && settings.tempOffsets[id];
+      if (!isNaN(item.t) && !isNaN(offset)) {
+        item.t += offset;
       }
 
       return item;
