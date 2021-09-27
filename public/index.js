@@ -72,6 +72,7 @@ const refreshInterval = 20000;
 
 const customNames = {};
 const tempTypes = {};
+const tempOffsets = {};
 
 function setGuiSettings(settings) {
   if (settings.minTemp) document.getElementById("minTemp").value = settings.minTemp;
@@ -89,6 +90,7 @@ function setGuiSettings(settings) {
 
   if (settings.customNames) Object.entries(settings.customNames).forEach((key, value) => (customNames[key[0]] = key[1]));
   if (settings.tempTypes) Object.entries(settings.tempTypes).forEach((key, value) => (tempTypes[key[0]] = key[1]));
+  if (settings.tempOffsets) Object.entries(settings.tempOffsets).forEach((key, value) => (tempOffsets[key[0]] = key[1]));
 
   if (!settings.logToBrewfather) document.getElementById("brewfather_wrapper").classList.add("hide");
   if (!settings.notify) document.getElementById("pushbullet_wrapper").classList.add("hide");
@@ -277,13 +279,14 @@ function start(firstTemps) {
     sensorOffsetInput.setAttribute("step", "0.1");
     sensorOffsetInput.setAttribute("min", "-100");
     sensorOffsetInput.setAttribute("max", "100");
-    sensorOffsetInput.setAttribute("value", 0);
+    const offset = tempOffsets[sensorId + ""];
+    sensorOffsetInput.setAttribute("value", isNaN(offset) ? 0 : offset);
     sensorOffsetWrapper.append(sensorOffsetInput);
 
     const sensorOffsetLabel = document.createElement("LABEL");
     sensorOffsetLabel.setAttribute("for", sensorOffsetInputId);
     sensorOffsetLabel.setAttribute("class", "active");
-    sensorOffsetLabel.append(sensorId + " offset");
+    sensorOffsetLabel.append("Offset (°C)");
     sensorOffsetWrapper.append(sensorOffsetLabel);
 
     sensorsOffsetsWrapper.append(sensorOffsetWrapper);
