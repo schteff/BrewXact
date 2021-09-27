@@ -7,6 +7,8 @@ const git = require("simple-git")();
 const exec = require("child_process").exec;
 const siftttwebhooks = require("simple-ifttt-webhooks");
 const ngrok = require("ngrok");
+const fs = require("fs");
+const util = require("util");
 
 const config = require("./config/config.js"), // import config variables
   port = config.port, // set the port
@@ -17,8 +19,6 @@ const config = require("./config/config.js"), // import config variables
 /**
  * Log to file also
  */
-const fs = require("fs");
-const util = require("util");
 const logFile = fs.createWriteStream("../log.txt", { flags: "w" });
 const logStdout = process.stdout;
 console.log = function () {
@@ -97,12 +97,25 @@ function getTemps() {
   const temps = sensor.readAllC(2);
   if (temps.length == 0) {
     //Mock values
-    temps.push({ id: "foo1", t: 40 + new Date().getSeconds() });
-    temps.push({ id: "foo2", t: 90 - new Date().getSeconds() });
-    temps.push({ id: "foo3", t: 22 });
+    const s = new Date().getSeconds();
+    temps.push({ id: "foo1", t: 120 + s / 4 });
+    temps.push({ id: "foo2", t: 120 - s / 3 });
+    if (s < 30) {
+      temps.push({ id: "foo3", t: 110 + s / 2 });
+    }
     //console.log("no temp sensors found, using mock sensors", temps);
   }
-  return temps;
+
+  // 85 celsius indicates an error in the temp sensor wiring
+  const filtered = temps.filter((item) => item.t !== 85).map((item) => {
+    if (item.t && settings.tempOffsets && settings.tempOffsets[t.id] && !isNaN(settings.tempOffsets[t.id])) {
+      item.t += settings.tempOffsets[t.id]
+    }
+
+    return item;
+  });
+
+  return filtered;
 }
 
 function lastReading() {
@@ -116,7 +129,28 @@ function getDataFileArrayItem(temps) {
 /**
  * The loop reading and storing the temperature values to the file / array
  */
-var settings = { measuring: false, minTemp: 62, maxTemp: 67, minFridgeTemp: 10, maxFridgeTemp: 30, logInterval: config.standardLogInterval };
+var settings = {
+  measuring: false,
+  minTemp: 62,
+  maxTemp: 67,
+  minFridgeTemp: 10,
+  maxFridgeTemp: 30,
+  logInterval: config.standardLogInterval,
+  notify: false,
+  pushBulletToken: null,
+  ngrokEnabled: false,
+  iftttEnabled: false,
+  iftttWebhooksKey: null,
+  iftttLowTempEventName: null,
+  iftttHighTempEventName: null,
+  iftttRestEventName: null,
+  tempTypes: {},
+  customNames: {},
+  logToBrewfather: false,
+  brewfatherStreamUrl: null,
+  tempOffsets: {},
+  ip = server && server.address() && server.address().address
+};
 var notificationSent = false;
 var logInterval = settings.logInterval;
 var logVar = setInterval(() => readTempAndCheck(), settings.logInterval);
@@ -135,14 +169,13 @@ function readTempAndCheck() {
   //Check if outside min/max
   if (settings.notify && settings.pushBulletToken) {
     const beerTemp = getAvgBeerTemp(temps);
-    const tooColdTemps = beerTemp.filter((t) => t.t < settings.minTemp);
-    const tooWarmTemps = beerTemp.filter((t) => t.t > settings.maxTemp);
-    const outsideRange = tooColdTemps.length > 0 || tooWarmTemps.length > 0;
+    const tooCold = beerTemp < settings.minTemp;
+    const tooWarm = beerTemp > settings.maxTemp;
+    const outsideRange = tooCold || tooWarm;
     if (outsideRange && !notificationSent) {
-      const hotOrCold = tooColdTemps.length === 0 ? "warm" : "cold";
+      const hotOrCold = tooWarm ? "warm" : "cold";
       const noteTitle = "Temperature too " + hotOrCold;
-      const tempsOutOfRange = tooColdTemps.concat(tooWarmTemps);
-      const noteBody = "Temp: " + tempsOutOfRange.map((s) => s.t + "°C").join(" & ");
+      const noteBody = "Temp: " + beerTemp + "°C";
       push(noteTitle, noteBody);
     }
     notificationSent = outsideRange;
@@ -312,6 +345,7 @@ function getAvgRoomTemp(temps) {
   const roomTemps = temps.filter((t) => settings.tempTypes[t.id] === "room");
   return getAvgTemp(roomTemps);
 }
+
 function getAvgTemp(temps) {
   const sum = temps.map((t) => (t.t ? t.t : 0)).reduce((acc, cur) => (cur += acc), 0);
   const count = temps.filter((t) => t.t).length;
@@ -355,7 +389,7 @@ async function iftttRest(beerTemp, targetTemp) {
 function trySendLastReadingToBrewfather() {
   if (settings.logToBrewfather && settings.brewfatherStreamUrl) {
     const temps = getTemps();
-    if(!temps || temps.length === 0){
+    if (!temps || temps.length === 0) {
       return;
     }
     const avgBeerTemp = getAvgBeerTemp(temps);
@@ -368,9 +402,9 @@ function trySendLastReadingToBrewfather() {
         return;
       }
       const name = key[1];
-      const arr = temps.filter((t) => t.id === sensor)[0];
-      if(arr && arr.t){
-        const temp = arr.t;
+      const sensorVal = temps.filter((t) => t.id === sensor)[0];
+      if (sensorVal && sensorVal.t) {
+        const temp = sensorVal.t;
         const brewfatherData = {
           name: sensor + name,
           temp: temp,
@@ -413,7 +447,10 @@ setTimeout(() => {
  */
 app.get("/temps", (req, res) => res.send(JSON.stringify(lastReading())));
 app.get("/init", (req, res) => res.send(JSON.stringify(dataFileArray)));
-app.get("/getSettings", (req, res) => res.send(JSON.stringify(settings)));
+app.get("/getSettings", (req, res) => {
+  settings.ip = server && server.address() && server.address().address
+  res.send(JSON.stringify(settings));
+});
 app.get("/clear", (req, res) => {
   console.log("Clearing history");
   //Backup old file

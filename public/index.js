@@ -1,28 +1,36 @@
 function init(callback) {
+  $("body").addClass("loading");
   fetch("/init")
     .then((response) => response.json())
-    .then((json) => callback(json));
+    .then((json) => callback(json))
+    .then(() => $("body").removeClass("loading"));
 }
 
 function fetchTemps(callback) {
+  $("body").addClass("loading");
   fetch("/temps")
     .then((response) => response.json())
-    .then((json) => callback(json));
+    .then((json) => callback(json))
+    .then(() => $("body").removeClass("loading"));
 }
 
 function fetchSettings(callback) {
+  $("body").addClass("loading");
   fetch("/getSettings")
     .then((response) => response.json())
-    .then((json) => callback(json));
+    .then((json) => callback(json))
+    .then(() => $("body").removeClass("loading"));
 }
 
 function fetchLog() {
+  $("body").addClass("loading");
   fetch("/getLog")
     .then((response) => response.text())
     .then((text) => {
       document.getElementById("logArea").value = text + "";
       $("#logArea").trigger("autoresize");
-    });
+    })
+    .then(() => $("body").removeClass("loading"));
 }
 
 function saveSettings(settings) {
@@ -60,7 +68,7 @@ function shutdownDevice() {
   fetch("/shutdown", other_params);
 }
 
-const refreshInterval = 12000;
+const refreshInterval = 20000;
 
 const customNames = {};
 const tempTypes = {};
@@ -118,8 +126,8 @@ function getGuiSettings() {
   const maxFridgeTemp = Number(document.getElementById("maxFridgeTemp").value);
   const logInterval = Number(document.getElementById("logInterval").value) * 1000;
   const customNames = {};
-  customNameInputs.forEach((input) => (customNames[input.id.replace("_name", "")] = input.value));
   const tempTypes = {};
+  const tempOffsets = {};
   customNameInputs.forEach((input) => {
     const sensorName = input.id.replace("_name", "");
     tempTypes[sensorName] = document.getElementById(sensorName + "_roomtemp").checked
@@ -127,6 +135,8 @@ function getGuiSettings() {
       : document.getElementById(sensorName + "_fridgetemp").checked
       ? "fridge"
       : "beer";
+    customNames[sensorName] = input.value;
+    tempOffsets[sensorName] = document.getElementById(sensorName + "_offset").value;
   });
   const notify = document.getElementById("notificationsEnabled").checked;
   const pushBulletToken = document.getElementById("pushBulletToken").value;
@@ -149,6 +159,7 @@ function getGuiSettings() {
     logInterval: logInterval,
     customNames: customNames,
     tempTypes: tempTypes,
+    tempOffsets: tempOffsets,
     notify: notify,
     pushBulletToken: pushBulletToken,
     brewfatherStreamUrl: brewfatherStreamUrl,
@@ -178,23 +189,23 @@ document.getElementById("ngrokEnabled").addEventListener("change", (event) => do
 const customNameInputs = [];
 
 const chartOptions = {
-  title: "Temperatüren",
+  titlePosition: "none",
   curveType: "function",
   legend: { position: "bottom" },
   focusTarget: "category",
   hAxis: { format: "yyyy-MM-dd HH:mm:ss" },
-  chartArea: { left: 40, top: 20, width: "95%", height: "75%" },
-  backgroundColor: "#eceff1",
+  chartArea: { left: 40, top: 20, width: "95%", height: "75%", backgroundColor: "transparent" },
+  backgroundColor: "transparent",
 };
 
 var gaugeOptions = {
-  width: 400,
+  width: 360,
   height: 120,
   redTo: 100,
   yellowColor: "#1FAAF1",
   yellowFrom: 0,
   minorTicks: 5,
-  min: 20,
+  min: 0,
   max: 100,
 };
 
@@ -227,15 +238,16 @@ function start(firstTemps) {
 
   const sensorsNamesWrapper = document.getElementById("sensor_names");
   const sensorsRadiosWrapper = document.getElementById("sensor_room_switches");
+  const sensorsOffsetsWrapper = document.getElementById("sensor_offsets");
   const sensorIds = [...new Set(firstTemps.flatMap((t) => t.temps).map((t) => t.id))];
 
   sensorIds.forEach((sensorId) => {
     chartDataTable.addColumn("number", sensorId);
-    const sensorNameInputId = sensorId + "_name";
 
-    // -----
-    const sensorWrapper = document.createElement("DIV");
-    sensorWrapper.setAttribute("class", "input-field col s4");
+    // ----- sensor name input
+    const sensorNameInputId = sensorId + "_name";
+    const sensorNameWrapper = document.createElement("DIV");
+    sensorNameWrapper.setAttribute("class", "input-field col s4");
 
     const sensorNameInput = document.createElement("INPUT");
     sensorNameInput.setAttribute("id", sensorNameInputId);
@@ -244,15 +256,39 @@ function start(firstTemps) {
     const index = customNameInputs.indexOf(sensorNameInput);
     const name = customNames[sensorId + ""];
     sensorNameInput.setAttribute("value", name ? name : "Mätare " + (index + 1));
-    sensorWrapper.append(sensorNameInput);
+    sensorNameWrapper.append(sensorNameInput);
 
     const sensorNameLabel = document.createElement("LABEL");
     sensorNameLabel.setAttribute("for", sensorNameInputId);
     sensorNameLabel.setAttribute("class", "active");
     sensorNameLabel.append(sensorId + "");
-    sensorWrapper.append(sensorNameLabel);
+    sensorNameWrapper.append(sensorNameLabel);
 
-    sensorsNamesWrapper.append(sensorWrapper);
+    sensorsNamesWrapper.append(sensorNameWrapper);
+
+    // ----- sensor offset input
+    const sensorOffsetInputId = sensorId + "_offset";
+    const sensorOffsetWrapper = document.createElement("DIV");
+    sensorOffsetWrapper.setAttribute("class", "input-field col s4");
+
+    const sensorOffsetInput = document.createElement("INPUT");
+    sensorOffsetInput.setAttribute("id", sensorOffsetInputId);
+    sensorOffsetInput.setAttribute("type", "number");
+    sensorOffsetInput.setAttribute("step", "0.1");
+    sensorOffsetInput.setAttribute("min", "-100");
+    sensorOffsetInput.setAttribute("max", "100");
+    sensorOffsetInput.setAttribute("value", 0);
+    sensorOffsetWrapper.append(sensorOffsetInput);
+
+    const sensorOffsetLabel = document.createElement("LABEL");
+    sensorOffsetLabel.setAttribute("for", sensorOffsetInputId);
+    sensorOffsetLabel.setAttribute("class", "active");
+    sensorOffsetLabel.append(sensorId + " offset");
+    sensorOffsetWrapper.append(sensorOffsetLabel);
+
+    sensorsOffsetsWrapper.append(sensorOffsetWrapper);
+
+    // ----- sensor type radio buttons
 
     const tempType = tempTypes[sensorId + ""];
     const beerRadioP = createTempSelector(sensorId, tempType, "beer");
@@ -268,7 +304,7 @@ function start(firstTemps) {
 
     // -----
 
-    // gaugeDataTable.addRow([sensorId, sensor.t]);
+    gaugeDataTable.addRow([sensorId, 0]);
   });
 
   const rowArrays = toRowArrays(firstTemps);
@@ -286,14 +322,11 @@ function createTempSelector(sensorId, tempType, type) {
   radioInput.setAttribute("name", sensorId + "_group");
   radioInput.checked = tempType === type;
 
-  const radioSpan = document.createElement("SPAN");
-  radioSpan.append(type + " temp");
-
   const radioLabel = document.createElement("LABEL");
-  radioLabel.append(radioInput);
-  radioLabel.append(radioSpan);
+  radioLabel.append(type + " temp");
 
   const radioP = document.createElement("P");
+  radioP.append(radioInput);
   radioP.append(radioLabel);
 
   return radioP;
@@ -306,8 +339,9 @@ function toRowArrays(firstTemps) {
 function toRowArray(obj, settings) {
   const rowArray = [new Date(obj.time)];
   obj.temps.forEach((tempObj) => rowArray.push(tempObj.t));
-  while (Object.entries(settings.customNames).length > rowArray.length + 1) {
-    rowArray.push(0);
+  const sensorCount = Object.entries(settings.customNames).length;
+  while (rowArray.length <= sensorCount) {
+    rowArray.push(null);
   }
   rowArray.push(settings.minTemp);
   rowArray.push(settings.maxTemp);
@@ -338,13 +372,16 @@ function refresh(gaugeChart, lineChart, chartDataTable, gaugeDataTable) {
     chartDataTable.setColumnLabel(jsonTemp.temps.length + 1, "Min " + settings.minTemp + "°C");
     chartDataTable.setColumnLabel(jsonTemp.temps.length + 2, "Max " + settings.maxTemp + "°C");
 
-    lineChart.draw(chartDataTable, chartOptions);
+    lineChart.draw(chartDataTable, google.charts.Line.convertOptions(chartOptions));
     gaugeOptions = {
       ...gaugeOptions,
-      yellowTo: settings.minTemp,
+      yellowFrom: settings.minFridgeTemp - 10,
+      yellowTo: settings.minFridgeTemp,
       greenFrom: settings.minTemp,
       greenTo: settings.maxTemp,
-      redFrom: settings.maxTemp,
+      redFrom: settings.maxFridgeTemp,
+      min: settings.minFridgeTemp - 10,
+      max: settings.maxFridgeTemp + 10,
     };
     gaugeChart.draw(gaugeDataTable, gaugeOptions);
 

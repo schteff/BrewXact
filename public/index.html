@@ -5,21 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto&display=swap" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" />
-    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-    <script src="https://www.gstatic.com/charts/loader.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/css/materialize.min.css" />
     <style>
       body {
         font-family: "Roboto", sans-serif;
       }
-      td + td + td {
-        display: none;
-      }
       .countdown {
         height: 5px;
         animation-name: countdown-anim;
-        animation-duration: 12s;
+        animation-duration: 20s;
         animation-iteration-count: infinite;
         animation-timing-function: linear;
         margin: 5px auto;
@@ -28,6 +22,16 @@
 
       .noMarginBottom {
         margin-bottom: 0;
+      }
+
+      .preloader-wrapper {
+        display: none;
+        position: fixed;
+        top: 10px;
+        left: 10px;
+      }
+      .loading .preloader-wrapper {
+        display: block;
       }
 
       @keyframes countdown-anim {
@@ -54,7 +58,20 @@
       </div>
     </nav>
     <div class="container">
-      <div id="gauge_chart" style="width: 237px; height: 120px; margin: 0 auto"></div>
+      <div class="preloader-wrapper big active">
+        <div class="spinner-layer spinner-blue-only">
+          <div class="circle-clipper left">
+            <div class="circle"></div>
+          </div>
+          <div class="gap-patch">
+            <div class="circle"></div>
+          </div>
+          <div class="circle-clipper right">
+            <div class="circle"></div>
+          </div>
+        </div>
+      </div>
+      <div id="gauge_chart" style="width: 360px; height: 120px; margin: 0 auto"></div>
       <div class="countdown blue-grey lighten-2"></div>
       <div id="curve_chart" style="width: 100%; height: 500px"></div>
       <div class="section">
@@ -85,7 +102,7 @@
               <label>
                 <input id="measuringEnabled" type="checkbox" />
                 <span class="lever"></span>
-                <span>Enabled</span>
+                Enable measuring
               </label>
             </div>
           </li>
@@ -123,6 +140,9 @@
             <div id="sensor_names"></div>
           </li>
           <li class="collection-item row noMarginBottom">
+            <div id="sensor_offsets"></div>
+          </li>
+          <li class="collection-item row noMarginBottom">
             <div id="sensor_room_switches"></div>
           </li>
           <li class="collection-header row valign-wrapper noMarginBottom">
@@ -131,7 +151,7 @@
               <label>
                 <input id="notificationsEnabled" type="checkbox" />
                 <span class="lever"></span>
-                <span>Enable pushbullet notifications</span>
+                Enable pushbullet notifications
               </label>
             </div>
           </li>
@@ -148,7 +168,7 @@
               <label>
                 <input id="bfEnabled" type="checkbox" />
                 <span class="lever"></span>
-                <span>Enable brewfather logging</span>
+                Enable brewfather logging
               </label>
             </div>
           </li>
@@ -168,7 +188,7 @@
               <label>
                 <input id="iftttEnabled" type="checkbox" />
                 <span class="lever"></span>
-                <span>Enable ifttt webhooks</span>
+                Enable ifttt webhooks
               </label>
             </div>
           </li>
@@ -203,7 +223,7 @@
               <label>
                 <input id="ngrokEnabled" type="checkbox" />
                 <span class="lever"></span>
-                <span>Enable ngrok</span>
+                Enable ngrok
               </label>
             </div>
           </li>
@@ -277,11 +297,12 @@
         <div class="container">© 2020 Vörtgården</div>
       </div>
     </footer>
-    <script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js"></script>
+    <script src="https://www.gstatic.com/charts/loader.js"></script>
     <script type="text/javascript" src="index.js"></script>
     <script type="text/javascript">
-      google.charts.load("current", { packages: ["corechart", "gauge"] });
+      google.charts.load("current", { packages: ["corechart", "gauge", "line"] });
       google.charts.setOnLoadCallback(drawChart);
     </script>
   </body>
