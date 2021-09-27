@@ -107,13 +107,15 @@ function getTemps() {
   }
 
   // 85 celsius indicates an error in the temp sensor wiring
-  const filtered = temps.filter((item) => item.t !== 85).map((item) => {
-    if (item.t && settings.tempOffsets && settings.tempOffsets[t.id] && !isNaN(settings.tempOffsets[t.id])) {
-      item.t += settings.tempOffsets[t.id]
-    }
+  const filtered = temps
+    .filter((item) => item.t !== 85)
+    .map((item) => {
+      if (item.t && settings.tempOffsets && settings.tempOffsets[t.id] && !isNaN(settings.tempOffsets[t.id])) {
+        item.t += settings.tempOffsets[t.id];
+      }
 
-    return item;
-  });
+      return item;
+    });
 
   return filtered;
 }
@@ -149,7 +151,7 @@ var settings = {
   logToBrewfather: false,
   brewfatherStreamUrl: null,
   tempOffsets: {},
-  ip = server && server.address() && server.address().address
+  ip: server && server.address() && server.address().address,
 };
 var notificationSent = false;
 var logInterval = settings.logInterval;
@@ -448,7 +450,7 @@ setTimeout(() => {
 app.get("/temps", (req, res) => res.send(JSON.stringify(lastReading())));
 app.get("/init", (req, res) => res.send(JSON.stringify(dataFileArray)));
 app.get("/getSettings", (req, res) => {
-  settings.ip = server && server.address() && server.address().address
+  settings.ip = server && server.address() && server.address().address;
   res.send(JSON.stringify(settings));
 });
 app.get("/clear", (req, res) => {
