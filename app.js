@@ -455,6 +455,10 @@ app.get("/getSettings", (req, res) => {
   settings.ip = server && server.address() && server.address().address;
   res.send(JSON.stringify(settings));
 });
+app.get("/manualRefresh", (req, res) => {
+  readTempAndCheck();
+  res.send(JSON.stringify(lastReading()));
+});
 app.get("/clear", (req, res) => {
   console.log("Clearing history");
   //Backup old file

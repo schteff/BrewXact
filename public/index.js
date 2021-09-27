@@ -313,8 +313,14 @@ function start(firstTemps) {
   const rowArrays = toRowArrays(firstTemps);
   rowArrays.forEach((rowArray) => chartDataTable.addRow(rowArray));
 
-  refresh(gaugeChart, lineChart, chartDataTable, gaugeDataTable);
-  setInterval(() => refresh(gaugeChart, lineChart, chartDataTable, gaugeDataTable), refreshInterval);
+  const doRefresh = () => refresh(gaugeChart, lineChart, chartDataTable, gaugeDataTable);
+  doRefresh();
+  setInterval(doRefresh, refreshInterval);
+
+  document.getElementById("refresh_btn").addEventListener("click", () => {
+    $("body").addClass("loading");
+    fetch("/manualRefresh").then((response) => doRefresh());
+  });
 }
 
 function createTempSelector(sensorId, tempType, type) {
