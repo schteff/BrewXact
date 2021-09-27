@@ -113,7 +113,7 @@ function getTemps() {
       const id = item.id;
       const offset = settings.tempOffsets && settings.tempOffsets[id];
       if (!isNaN(item.t) && !isNaN(offset)) {
-        item.t += offset;
+        item.t = +item.t + +offset;
       }
 
       return item;
