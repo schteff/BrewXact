@@ -255,6 +255,13 @@ function tempController() {
       }
       return;
     }
+    if (beerTemp === 0) {
+      console.log("Beer temp is zero, this might mean 'unknown'. Doing nothing.");
+      if (settings.notify && settings.pushBulletToken) {
+        push("Zero temp detected!", "Probably missing value if not cold crashing!");
+      }
+      return;
+    }
     lastIftttBeerTemp = beerTemp + 0;
     const targetTemp = (settings.minTemp + settings.maxTemp) / 2;
     const belowBeerMin = beerTemp < settings.minTemp + 0;
