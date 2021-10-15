@@ -192,7 +192,7 @@ const customNameInputs = [];
 
 const chartOptions = {
   titlePosition: "none",
-  curveType: "function",
+  curveType: "none",
   legend: { position: "bottom" },
   focusTarget: "category",
   hAxis: { format: "yyyy-MM-dd HH:mm:ss" },
