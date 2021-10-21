@@ -63,7 +63,7 @@ function reboot(callback) {
   });
 }
 
-exec("npm install", (error, stdout) => (error ? console.error(error) : console.log("npm install result: " + stdout)));
+// exec("npm install", (error, stdout) => (error ? console.error(error) : console.log("npm install result: " + stdout)));
 
 app.use(express.static(path.join(__dirname, "public"))); // this middleware serves static files, such as .js, .img, .css files
 app.use(express.json());
