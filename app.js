@@ -63,7 +63,7 @@ function reboot(callback) {
   });
 }
 
-exec("yarn install", (error, stdout) => (error ? console.error(error) : console.log("yarn install result: " + stdout)));
+exec("npm install", (error, stdout) => (error ? console.error(error) : console.log("npm install result: " + stdout)));
 
 app.use(express.static(path.join(__dirname, "public"))); // this middleware serves static files, such as .js, .img, .css files
 app.use(express.json());
@@ -550,7 +550,7 @@ app.post("/update", (req, res) => {
       if (update && update.summary.changes) {
         console.log(update);
         res.send("updating");
-        exec("yarn install", (error, stdout) => (error ? console.error(error) : console.log(stdout)));
+        exec("npm install", (error, stdout) => (error ? console.error(error) : console.log(stdout)));
       } else if (err) {
         console.error(err);
         res.status(500);
