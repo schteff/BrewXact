@@ -94,8 +94,23 @@ jsonfile.readFile(dataFile, (err, obj) => {
 });
 
 function getTemps() {
-  const temps = sensor.readAllC(2);
-  if (temps.length == 0) {
+  let temps = sensor.readAllC(2);
+
+  //One retry if something wrong
+  if (
+    temps
+      .filter((item) => item.t)
+      .filter((item) => item.t !== 85)
+      .filter((item) => item.t !== 0).length < temps.length
+  ) {
+    console.log("Invalid value in temps, trying again", temps);
+    const waitTill = new Date(new Date().getTime() + 500);
+    while (waitTill > new Date()) {}
+    temps = sensor.readAllC(2);
+    console.log("Values after retry", temps);
+  }
+
+  if (temps.length === 0) {
     //Mock values
     const s = new Date().getSeconds();
     temps.push({ id: "foo1", t: 120 + s / 4 });
@@ -437,7 +452,7 @@ function trySendLastReadingToBrewfather() {
         };
 
         request.post(settings.brewfatherStreamUrl, { json: brewfatherData }, (error, response, body) => {
-          if (!error && response.statusCode == 200) {
+          if (!error && response.statusCode === 200) {
             console.log("Successful logged temp sensor " + sensor + " " + name + " to brewfather");
           } else if (error) {
             console.error(error);
@@ -496,7 +511,7 @@ app.post("/saveSettings", (req, res) => {
         trySendLastReadingToBrewfather();
       }
 
-      if (settings.logInterval != logInterval) {
+      if (settings.logInterval !== logInterval) {
         logInterval = settings.logInterval;
         clearInterval(logVar);
         console.log("Restarting logging with interval " + logInterval);
@@ -535,7 +550,7 @@ app.post("/update", (req, res) => {
       if (update && update.summary.changes) {
         console.log(update);
         res.send("updating");
-        exec("npm install", (error, stdout) => (error ? console.error(error) : console.log(stdout)));
+        exec("yarn install", (error, stdout) => (error ? console.error(error) : console.log(stdout)));
       } else if (err) {
         console.error(err);
         res.status(500);
