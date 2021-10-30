@@ -243,11 +243,6 @@ function start(firstTemps) {
   const sensorsOffsetsWrapper = document.getElementById("sensor_offsets");
   const sensorIds = [...new Set(firstTemps.flatMap((t) => t.temps).map((t) => t.id))];
 
-  const date_formatter = new google.visualization.DateFormat({
-    pattern: "yyyy-MM-dd HH:mm:ss",
-  });
-  date_formatter.format(chartDataTable, 0);
-
   sensorIds.forEach((sensorId) => {
     chartDataTable.addColumn("number", sensorId);
 
@@ -402,6 +397,11 @@ function refresh(gaugeChart, lineChart, chartDataTable, gaugeDataTable) {
     document.getElementById("iftttState").innerHTML = jsonTemp.iftttState + " (avg " + jsonTemp.iftttTemp + "°C)";
     document.getElementById("ngrokUrl").innerHTML = '<a href="' + jsonTemp.ngrokUrl + '" target="_blank">' + jsonTemp.ngrokUrl + "</a>";
   });
+
+  const date_formatter = new google.visualization.DateFormat({
+    pattern: "yyyy-MM-dd HH:mm:ss",
+  });
+  date_formatter.format(chartDataTable, 0);
 }
 
 function beep() {
